@@ -2,15 +2,16 @@
 """Select, deploy, or remove a gpt-5.6-sol Codex instruction file.
 
 The public repository stores each prompt as a ZIP archive. Applying a version
-extracts its Markdown file into CODEX_HOME, backs up config.toml, and sets the
-top-level `model_instructions_file` entry. The interactive reset action lists
-available backups, restores the user-selected file after confirmation, and
-removes prompt files managed by this script.
+extracts its Markdown file into CODEX_HOME, snapshots config.toml, and sets the
+top-level `model_instructions_file` entry. Reset only restores that managed
+entry and removes prompt files owned by this script; it never replaces the
+whole config.toml, so provider managers such as CCSwitch remain authoritative.
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
 import shutil
@@ -36,6 +37,8 @@ MANAGED_PROMPT_FILENAMES = {
     *(choice["md_filename"] for choice in PROMPT_VERSIONS.values()),
 }
 BASELINE_BACKUP_SUFFIX = ".gpt56-sol-instruct.bak"
+STATE_FILENAME = ".gpt56-sol-instruct-state.json"
+STATE_VERSION = 1
 
 ANSI_RESET = "\033[0m"
 ANSI_BOLD = "\033[1m"
@@ -92,7 +95,7 @@ def intro_text() -> str:
 v5 提示词较为简单，足够应付多数场景（{zh_recommended}）。
 v35 提示词加入对特殊任务的优化，但安全性不如 v5（{zh_v35_notice}）。
 
-选择后会将相应提示词.md文件复制到CODEX_HOME中，在config.toml中写入model_instructions_file项，并创建config.toml的备份。若要卸载提示词并恢复原样，请选择“去除提示词恢复备份”项，或手动删除model_instructions_file配置项。
+选择后会将相应提示词.md文件复制到CODEX_HOME中，在config.toml中写入model_instructions_file项，并创建操作前快照。卸载时只恢复这一项，不会覆盖CCSwitch管理的provider、模型或认证配置。
 
 {en_banner}
 {en_title}
@@ -100,7 +103,7 @@ v35 提示词加入对特殊任务的优化，但安全性不如 v5（{zh_v35_no
 v5 instructions are simpler and sufficient for most scenarios ({en_recommended}).
 v35 instructions add optimizations for specialized tasks, but are less safe than v5 ({en_v35_notice}).
 
-After a version is selected, its prompt .md file is copied to CODEX_HOME, the model_instructions_file entry is written to config.toml, and config.toml is backed up. To uninstall the prompt and restore the previous state, choose “Reset to backup”, or manually remove the model_instructions_file entry.
+After a version is selected, its prompt .md file is copied to CODEX_HOME, the model_instructions_file entry is written to config.toml, and a pre-operation snapshot is created. Uninstall restores only that entry and never replaces provider, model, or authentication settings managed by CCSwitch.
 """
 
 
@@ -116,7 +119,7 @@ def menu_text() -> str:
 {selection_banner}
 1. 植入 v5 提示词 / Apply v5 instructions file （{recommendation}）
 2. 植入 v35 提示词 / Apply v35 instructions file （{v35_notice}）
-3. 去除提示词并恢复备份 / Reset to backup
+3. 去除提示词并恢复原配置项 / Remove managed instructions
 q. 退出而不执行任何操作 / Quit without modification
 """
 
@@ -147,81 +150,196 @@ def baseline_backup_path(config_path: Path) -> Path:
     return config_path.with_name(config_path.name + BASELINE_BACKUP_SUFFIX)
 
 
-def available_backups(config_path: Path) -> list[Path]:
-    baseline = baseline_backup_path(config_path)
-    candidates = {
-        path.resolve()
-        for path in config_path.parent.glob(config_path.name + "*.bak*")
-        if path.is_file()
-    }
-    ordered: list[Path] = []
-    if baseline.is_file():
-        ordered.append(baseline.resolve())
-        candidates.discard(baseline.resolve())
-    ordered.extend(
-        sorted(
-            candidates,
-            key=lambda path: (path.stat().st_mtime_ns, path.name),
-            reverse=True,
-        )
-    )
-    return ordered
+def state_file_path(config_path: Path) -> Path:
+    return config_path.parent / STATE_FILENAME
 
 
-def config_references_managed_prompt(config_path: Path) -> bool:
-    if not config_path.exists():
+def top_level_model_instructions_line(text: str) -> str | None:
+    """Return the root model_instructions_file assignment, ignoring TOML tables."""
+    for line in text.splitlines():
+        stripped = line.lstrip()
+        if stripped.startswith("["):
+            break
+        if re.match(r"^\s*model_instructions_file\s*=", line):
+            return line
+    return None
+
+
+def line_references_managed_prompt(line: str | None, filenames: set[str]) -> bool:
+    if not line:
         return False
-    for line in config_path.read_text(encoding="utf-8").splitlines():
-        if re.match(r"^\s*model_instructions_file\s*=", line) and any(
-            filename in line for filename in MANAGED_PROMPT_FILENAMES
+    match = re.match(
+        r"^\s*model_instructions_file\s*=\s*(['\"])(.*?)\1\s*(?:#.*)?$",
+        line,
+    )
+    if not match:
+        return False
+    referenced_name = match.group(2).replace("\\", "/").rsplit("/", 1)[-1]
+    return referenced_name in filenames
+
+
+def replace_top_level_model_instructions(text: str, replacement: str | None) -> str:
+    """Replace only the root assignment while preserving all unrelated TOML text."""
+    lines = text.splitlines(keepends=True)
+    table_index = next(
+        (index for index, line in enumerate(lines) if line.lstrip().startswith("[")),
+        len(lines),
+    )
+    assignment_indexes = [
+        index
+        for index, line in enumerate(lines[:table_index])
+        if re.match(r"^\s*model_instructions_file\s*=", line)
+    ]
+
+    if assignment_indexes:
+        first = assignment_indexes[0]
+        newline = (
+            "\r\n"
+            if lines[first].endswith("\r\n")
+            else "\n"
+            if lines[first].endswith("\n")
+            else ""
+        )
+        if replacement is None:
+            del lines[first]
+        else:
+            lines[first] = replacement + newline
+        return "".join(lines)
+
+    if replacement is None:
+        return text
+
+    insert_at = next(
+        (
+            index + 1
+            for index, line in enumerate(lines[:table_index])
+            if re.match(r"^\s*model\s*=", line)
+        ),
+        table_index,
+    )
+    newline = "\r\n" if any(line.endswith("\r\n") for line in lines) else "\n"
+    if insert_at > 0 and lines[insert_at - 1] and not lines[insert_at - 1].endswith("\n"):
+        lines[insert_at - 1] += newline
+    lines.insert(insert_at, replacement + newline)
+    return "".join(lines)
+
+
+def atomic_write_text(path: Path, text: str) -> None:
+    """Atomically replace a text file while retaining its existing permissions."""
+    previous_mode = path.stat().st_mode & 0o777 if path.exists() else 0o600
+    descriptor, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
+    temporary_path = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            handle.write(text)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.chmod(temporary_path, previous_mode)
+        os.replace(temporary_path, path)
+    finally:
+        if temporary_path.exists():
+            temporary_path.unlink()
+
+
+def read_state(config_path: Path) -> dict[str, object] | None:
+    path = state_file_path(config_path)
+    if not path.exists():
+        return None
+    try:
+        state = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return None
+    if not isinstance(state, dict) or state.get("version") != STATE_VERSION:
+        return None
+    return state
+
+
+def save_state(config_path: Path, state: dict[str, object]) -> None:
+    atomic_write_text(
+        state_file_path(config_path),
+        json.dumps(state, ensure_ascii=False, indent=2) + "\n",
+    )
+
+
+def previous_instruction_from_legacy_baseline(config_path: Path) -> str | None:
+    """Migrate only the old instruction entry, never provider data, from a legacy backup."""
+    baseline = baseline_backup_path(config_path)
+    if not baseline.exists():
+        return None
+    line = top_level_model_instructions_line(baseline.read_text(encoding="utf-8"))
+    if line_references_managed_prompt(line, MANAGED_PROMPT_FILENAMES):
+        return None
+    return line
+
+
+def prepare_deployment_state(config_path: Path, md_filename: str) -> dict[str, object]:
+    state = read_state(config_path)
+    if state is None:
+        current_line = top_level_model_instructions_line(
+            config_path.read_text(encoding="utf-8") if config_path.exists() else ""
+        )
+        if line_references_managed_prompt(
+            current_line,
+            MANAGED_PROMPT_FILENAMES | {md_filename},
         ):
-            return True
-    return False
+            current_line = previous_instruction_from_legacy_baseline(config_path)
+        state = {
+            "version": STATE_VERSION,
+            "previous_model_instructions_line": current_line,
+            "managed_prompt_filenames": [],
+        }
+
+    stored_filenames = state.get("managed_prompt_filenames", [])
+    filenames = (
+        {name for name in stored_filenames if isinstance(name, str)}
+        if isinstance(stored_filenames, list)
+        else set()
+    )
+    filenames.add(md_filename)
+    state["managed_prompt_filenames"] = sorted(filenames)
+    save_state(config_path, state)
+    return state
 
 
 def set_model_instructions(config_path: Path, md_filename: str) -> bool:
     text = config_path.read_text(encoding="utf-8") if config_path.exists() else ""
     target = f'model_instructions_file = "./{md_filename}"'
-    pattern = re.compile(r"^\s*model_instructions_file\s*=.*$", re.MULTILINE)
-    if pattern.search(text):
-        new_text = pattern.sub(target, text)
-    else:
-        lines = text.splitlines()
-        insert_at = None
-        for index, line in enumerate(lines):
-            if line.strip().startswith("model ") and "=" in line:
-                insert_at = index + 1
-                break
-        if insert_at is None:
-            insert_at = next(
-                (index for index, line in enumerate(lines) if line.lstrip().startswith("[")),
-                len(lines),
-            )
-        lines.insert(insert_at, target)
-        new_text = "\n".join(lines) + "\n"
+    new_text = replace_top_level_model_instructions(text, target)
     if new_text != text:
-        config_path.write_text(new_text, encoding="utf-8")
+        atomic_write_text(config_path, new_text)
         return True
     return False
 
 
-def remove_managed_model_instructions(config_path: Path) -> bool:
+def restore_managed_model_instructions(config_path: Path) -> tuple[bool, str]:
     if not config_path.exists():
-        return False
+        return False, "missing"
+
+    state = read_state(config_path)
+    managed_filenames = set(MANAGED_PROMPT_FILENAMES)
+    if state:
+        stored_filenames = state.get("managed_prompt_filenames", [])
+        if isinstance(stored_filenames, list):
+            managed_filenames.update(
+                name for name in stored_filenames if isinstance(name, str)
+            )
+
     text = config_path.read_text(encoding="utf-8")
-    lines = text.splitlines(keepends=True)
-    new_text = "".join(
-        line
-        for line in lines
-        if not (
-            re.match(r"^\s*model_instructions_file\s*=", line)
-            and any(filename in line for filename in MANAGED_PROMPT_FILENAMES)
-        )
-    )
+    current_line = top_level_model_instructions_line(text)
+    if not line_references_managed_prompt(current_line, managed_filenames):
+        return False, "not-managed"
+
+    previous_line = state.get("previous_model_instructions_line") if state else None
+    if previous_line is not None and not isinstance(previous_line, str):
+        previous_line = None
+    if state is None:
+        previous_line = previous_instruction_from_legacy_baseline(config_path)
+
+    new_text = replace_top_level_model_instructions(text, previous_line)
     if new_text != text:
-        config_path.write_text(new_text, encoding="utf-8")
-        return True
-    return False
+        atomic_write_text(config_path, new_text)
+        return True, "restored" if previous_line else "removed"
+    return False, "unchanged"
 
 
 def read_prompt(source_path: Path, expected_md_filename: str) -> str:
@@ -250,6 +368,9 @@ def deploy_prompt(
     prompt_path: Path,
     md_filename: str,
 ) -> int:
+    if Path(md_filename).name != md_filename or not md_filename.endswith(".md"):
+        print(f"[错误] 目标名称必须是不含路径的 .md 文件名: {md_filename}", file=sys.stderr)
+        return 2
     if not prompt_path.exists():
         print(f"[错误] 提示词文件不存在: {prompt_path}", file=sys.stderr)
         return 2
@@ -269,94 +390,42 @@ def deploy_prompt(
     print(f"[+] Prompt: {prompt_path} [{source_kind}]")
     for codex_dir in codex_dirs:
         config_path = codex_dir / "config.toml"
-        baseline = baseline_backup_path(config_path)
         destination = codex_dir / md_filename
         print(f"\n── 目标 / Target: {codex_dir} ──")
         print(f"  写入 / Write: {destination}")
         print(f'  配置 / Config: model_instructions_file = "./{md_filename}"')
-        print(f"  基线备份 / Baseline backup: {baseline.name}")
+        print("  兼容模式 / Compatibility: 仅修改本项目管理的配置项")
         if args.dry_run:
             continue
 
         codex_dir.mkdir(parents=True, exist_ok=True)
         if not config_path.exists():
-            config_path.write_text("", encoding="utf-8")
+            atomic_write_text(config_path, "")
             print("  创建 / Created: config.toml")
-        if not baseline.exists():
-            shutil.copy2(config_path, baseline)
-            print(f"  已创建基线备份 / Baseline saved: {baseline.name}")
-        elif not config_references_managed_prompt(config_path):
-            shutil.copy2(config_path, baseline)
-            print(f"  已刷新基线备份 / Baseline refreshed: {baseline.name}")
-        else:
-            print(f"  保留现有基线备份 / Baseline retained: {baseline.name}")
         snapshot = backup_file(config_path)
         print(f"  已创建操作前备份 / Snapshot saved: {snapshot.name}")
 
-        destination.write_text(prompt_text, encoding="utf-8")
+        prepare_deployment_state(config_path, md_filename)
+        atomic_write_text(destination, prompt_text)
         changed = set_model_instructions(config_path, md_filename)
         print("  状态 / Status:", "已更新 / Updated" if changed else "已是最新 / Already current")
     return 0
 
 
-def choose_backup(config_path: Path) -> tuple[Path | None, bool]:
-    backups = available_backups(config_path)
-    if not backups:
-        print("  未找到可恢复的 config.toml 备份。")
-        print("  No restorable config.toml backup was found.")
-        return None, True
-
-    print("  可用备份 / Available backups:")
-    baseline = baseline_backup_path(config_path).resolve()
-    for index, backup in enumerate(backups, start=1):
-        stat = backup.stat()
-        modified = datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M:%S")
-        label = (
-            "部署前基线 / Pre-deployment baseline"
-            if backup == baseline
-            else "操作快照 / Operation snapshot"
-        )
-        print(f"    {index}. {backup.name} [{label}; {modified}; {stat.st_size} bytes]")
-    print("    q. 取消恢复 / Cancel reset")
-
-    while True:
-        try:
-            choice = input(
-                f"请选择要恢复的文件 / Select a backup to restore [1-{len(backups)}/q]: "
-            ).strip().lower()
-        except (EOFError, KeyboardInterrupt):
-            print()
-            return None, False
-        if choice == "q":
-            return None, False
-        if choice.isdigit() and 1 <= int(choice) <= len(backups):
-            return backups[int(choice) - 1], True
-        print(
-            f"[错误] 请输入 1-{len(backups)} 或 q / "
-            f"Enter a number from 1 to {len(backups)}, or q."
-        )
-
-
-def confirm_reset(restore_source: Path | None) -> bool:
-    if restore_source:
-        print(f"  将恢复 / Selected backup: {restore_source}")
-        print("  该文件将覆盖 config.toml，并移除脚本管理的提示词文件。")
-        print("  This file will replace config.toml, and managed prompt files will be removed.")
-    else:
-        print("  没有可用备份；将仅移除脚本管理的 model_instructions_file 配置和提示词文件。")
-        print(
-            "  No backup is available; only the managed model_instructions_file entry "
-            "and prompt files will be removed."
-        )
+def confirm_reset() -> bool:
+    print("  将只恢复本脚本管理的 model_instructions_file，并移除提示词文件。")
+    print("  provider、模型、认证及CCSwitch在部署后写入的其他配置均保持不变。")
+    print("  Only the managed model_instructions_file entry and prompt files will change.")
+    print("  Provider, model, authentication, and later CCSwitch changes will be preserved.")
     try:
-        answer = input("确认继续？/ Confirm reset? [y/N]: ").strip().lower()
+        answer = input("确认继续？/ Confirm removal? [y/N]: ").strip().lower()
     except (EOFError, KeyboardInterrupt):
         print()
         return False
     return answer in {"y", "yes", "是"}
 
 
-def reset_to_backup(args: argparse.Namespace) -> int:
+def reset_managed_install(args: argparse.Namespace) -> int:
     codex_dirs = selected_codex_dirs(args.codex_dir)
     if not codex_dirs:
         print("[错误] 未找到 .codex/config.toml；请使用 --codex-dir 指定。", file=sys.stderr)
@@ -365,19 +434,23 @@ def reset_to_backup(args: argparse.Namespace) -> int:
     for codex_dir in codex_dirs:
         config_path = codex_dir / "config.toml"
         print(f"\n── 目标 / Target: {codex_dir} ──")
-        restore_source, should_continue = choose_backup(config_path)
-        if not should_continue:
-            print("  已取消 / Reset cancelled.")
-            continue
-        if not confirm_reset(restore_source):
+        state = read_state(config_path)
+        managed_filenames = set(MANAGED_PROMPT_FILENAMES)
+        if state:
+            stored_filenames = state.get("managed_prompt_filenames", [])
+            if isinstance(stored_filenames, list):
+                managed_filenames.update(
+                    name
+                    for name in stored_filenames
+                    if isinstance(name, str) and Path(name).name == name
+                )
+
+        if not confirm_reset():
             print("  未确认，已取消 / Confirmation not received; reset cancelled.")
             continue
 
-        if restore_source:
-            print(f"  恢复 / Restore: {restore_source.name} -> config.toml")
-        else:
-            print("  恢复 / Restore: 无备份，将移除脚本管理的配置项")
-        for filename in sorted(MANAGED_PROMPT_FILENAMES):
+        print("  配置 / Config: 字段级恢复，不覆盖 config.toml")
+        for filename in sorted(managed_filenames):
             print(f"  移除 / Remove: {filename}")
         if args.dry_run:
             print("  预览完成，未修改文件 / Dry run complete; no files changed.")
@@ -388,32 +461,25 @@ def reset_to_backup(args: argparse.Namespace) -> int:
             snapshot = backup_file(config_path)
             print(f"  已创建恢复前备份 / Pre-reset snapshot: {snapshot.name}")
 
-        if restore_source:
-            shutil.copy2(restore_source, config_path)
-            removed_entry = remove_managed_model_instructions(config_path)
-            print(
-                "  配置状态 / Config status:",
-                "已恢复备份并移除脚本配置 / Backup restored; managed entry removed"
-                if removed_entry
-                else "已恢复备份 / Backup restored",
-            )
-        elif config_path.exists():
-            changed = remove_managed_model_instructions(config_path)
-            print(
-                "  配置状态 / Config status:",
-                "已移除脚本配置项 / Managed entry removed"
-                if changed
-                else "未发现脚本配置项 / Managed entry not found",
-            )
-        else:
-            print("  配置状态 / Config status: config.toml 不存在 / Not found")
+        _changed, status = restore_managed_model_instructions(config_path)
+        status_messages = {
+            "restored": "已恢复原配置项 / Previous entry restored",
+            "removed": "已移除脚本配置项 / Managed entry removed",
+            "not-managed": "当前配置项不属于本脚本，保持不变 / Current entry left unchanged",
+            "missing": "config.toml 不存在 / Not found",
+            "unchanged": "无需修改 / No change needed",
+        }
+        print("  配置状态 / Config status:", status_messages[status])
 
         removed = 0
-        for filename in MANAGED_PROMPT_FILENAMES:
+        for filename in managed_filenames:
             prompt_path = codex_dir / filename
             if prompt_path.exists():
                 prompt_path.unlink()
                 removed += 1
+        state_path = state_file_path(config_path)
+        if state_path.exists():
+            state_path.unlink()
         print(f"  提示词状态 / Prompt status: 已移除 {removed} 个文件 / Removed {removed} file(s)")
     return 0
 
@@ -445,7 +511,11 @@ def main() -> int:
     )
     action_group = parser.add_mutually_exclusive_group()
     action_group.add_argument("--version", choices=("v5", "v35"), help="Apply v5 or v35")
-    action_group.add_argument("--reset", action="store_true", help="Restore the backup and remove prompts")
+    action_group.add_argument(
+        "--reset",
+        action="store_true",
+        help="Remove managed prompts without replacing config.toml",
+    )
     action_group.add_argument("--file", "-f", help="Apply a custom instruction ZIP or Markdown file")
     parser.add_argument("--name", "-n", help="Destination filename for --file, with or without .md")
     parser.add_argument("--codex-dir", help="Explicit Codex home directory, e.g. ~/.codex")
@@ -469,7 +539,7 @@ def main() -> int:
         print("未执行修改 / No modification made.")
         return 0
     if action == "reset":
-        return reset_to_backup(args)
+        return reset_managed_install(args)
 
     selected = PROMPT_VERSIONS[action]
     return deploy_prompt(args, selected["archive"], selected["md_filename"])
