@@ -4,6 +4,7 @@ __pycache__/
 reports/
 tests/
 releases/
+tmp/
 
 .DS_Store
 **/.DS_Store
