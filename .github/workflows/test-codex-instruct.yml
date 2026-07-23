@@ -7,14 +7,14 @@ on:
   pull_request:
     paths:
       - "codex-instruct.py"
-      - "unit_tests/**"
+      - "unit-tests/**"
       - ".github/workflows/test-codex-instruct.yml"
   push:
     branches:
       - main
     paths:
       - "codex-instruct.py"
-      - "unit_tests/**"
+      - "unit-tests/**"
       - ".github/workflows/test-codex-instruct.yml"
   workflow_dispatch:
 
@@ -46,8 +46,8 @@ jobs:
 
       # Catch syntax/import compatibility problems before running behavioral tests.
       - name: Compile deployment script and tests
-        run: python -m py_compile codex-instruct.py unit_tests/test_codex_instruct.py
+        run: python -m py_compile codex-instruct.py unit-tests/test_codex_instruct.py
 
       # Exercise config ownership, safe reset, snapshot recovery, and file-preservation cases.
       - name: Run unit tests
-        run: python -m unittest discover -s unit_tests -q
+        run: python -m unittest discover -s unit-tests -q

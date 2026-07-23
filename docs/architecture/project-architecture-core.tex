@@ -1,0 +1,137 @@
+\documentclass[tikz,border=8pt]{standalone}
+\usepackage{fontspec}
+\usepackage{xeCJK}
+\usepackage{etoolbox}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,calc,positioning}
+
+\providecommand{\DiagramLanguage}{zh}
+\providecommand{\DiagramTheme}{light}
+\newcommand{\T}[2]{\ifdefstring{\DiagramLanguage}{zh}{#1}{#2}}
+
+\IfFontExistsTF{TeX Gyre Termes}{\setmainfont{TeX Gyre Termes}}{\setmainfont{Times New Roman}}
+\IfFontExistsTF{FangSong_GB2312}{%
+  \setCJKmainfont[AutoFakeBold=2]{FangSong_GB2312}\setCJKsansfont[AutoFakeBold=2]{FangSong_GB2312}%
+}{%
+  \setCJKmainfont{PingFang SC}\setCJKsansfont{PingFang SC}%
+}
+
+\ifdefstring{\DiagramTheme}{dark}{%
+  \definecolor{canvas}{HTML}{171717}
+  \definecolor{ink}{HTML}{F2F2F2}
+  \definecolor{line}{HTML}{D4D4D4}
+  \definecolor{inputfill}{HTML}{2B2B37}
+  \definecolor{processfill}{HTML}{26382A}
+  \definecolor{outputfill}{HTML}{3B3026}
+}{%
+  \definecolor{canvas}{HTML}{FFFFFF}
+  \definecolor{ink}{HTML}{111111}
+  \definecolor{line}{HTML}{222222}
+  \definecolor{inputfill}{HTML}{F3F3FA}
+  \definecolor{processfill}{HTML}{ECF8EC}
+  \definecolor{outputfill}{HTML}{FFF4E9}
+}
+
+\tikzset{
+  every node/.style={font=\rmfamily, text=ink},
+  panel/.style={draw=line, line width=0.65pt},
+  box/.style={draw=line, line width=0.65pt, rounded corners=1.5pt,
+    align=center, inner xsep=7pt, inner ysep=5pt, minimum height=1.02cm,
+    font=\rmfamily\small},
+  input/.style={box, fill=inputfill},
+  process/.style={box, fill=processfill},
+  output/.style={box, fill=outputfill},
+  arrow/.style={-{Stealth[length=2.1mm,width=1.5mm]}, draw=line, line width=0.72pt},
+  return/.style={arrow, dashed},
+  edge label/.style={font=\rmfamily\scriptsize, fill=canvas, text=ink, inner sep=2pt},
+}
+
+\begin{document}
+\begin{tikzpicture}[x=1cm,y=1cm]
+  \path[fill=canvas] (-0.15,-0.15) rectangle (32.15,15.05);
+
+  \node[font=\rmfamily\bfseries\Large] at (16,14.57)
+    {\T{项目架构：提示词迭代优化与生产使用}{Project Architecture: Prompt Iteration and Production Use}};
+
+  \draw[panel] (0.25,0.45) rectangle (15.25,13.90);
+  \draw[panel] (15.75,0.45) rectangle (31.75,13.90);
+  \node[font=\rmfamily\bfseries\large] at (7.75,13.45)
+    {\T{A. 迭代优化}{A. Iterative Optimization}};
+  \node[font=\rmfamily\bfseries\large] at (23.75,13.45)
+    {\T{B. 生产使用}{B. Production Use}};
+
+  % Iterative optimization: feedback updates the bank, the model revises its
+  % own prompt, and failures return through an orthogonal evidence loop.
+  \node[input, text width=9.2cm] (feedback) at (7.75,12.02)
+    {\textbf{\T{持续输入}{Continuous Inputs}}\\
+     \T{用户指令、真实失败与 GitHub Issues}{User requests, real failures, and GitHub Issues}};
+
+  \node[process, text width=5.7cm] (bank) at (4.08,9.82)
+    {\textbf{\T{模型创建并更新测试集}{Model Builds and Updates the Test Bank}}\\
+     \T{中英文等价任务、未见改写、多轮与工件检查}{Bilingual equivalents, unseen prompts, turn and artifact checks}};
+  \node[process, text width=5.7cm] (optimize) at (11.42,9.82)
+    {\textbf{\T{模型分析失败并优化提示词}{Model Diagnoses Failures and Revises the Prompt}}\\
+     \T{归纳意图族与规则层级，避免单例过拟合}{Generalize intent families and rules; avoid case overfitting}};
+  \node[process, text width=5.7cm] (regress) at (11.42,7.05)
+    {\textbf{\T{分层回归}{Tiered Regression}}\\
+     low $\rightarrow$ medium $\rightarrow$ high\\
+     \T{网络或容量中断从断点重测}{Retry network or capacity interruptions}};
+  \node[input, text width=5.7cm] (gate) at (4.08,7.05)
+    {\textbf{\T{证据门禁}{Evidence Gate}}\\
+     \T{逐例判定、跨轮一致性、原始输出与报告}{Per-case verdicts, turn consistency, raw outputs, and reports}};
+  \node[output, text width=8.1cm] (release) at (7.75,4.18)
+    {\textbf{\T{最新通过版本：v41}{Latest Passed Release: v41}}\\
+     \T{原 120-case 与新增专项集；low / medium / high 均通过}{Original 120-case and issue banks; gated at low / medium / high}};
+
+  \draw[arrow] (feedback.south) -- (bank.north);
+  \draw[arrow] (bank.east) -- (optimize.west);
+  \draw[arrow] (optimize.south) -- (regress.north);
+  \draw[arrow] (regress.west) -- (gate.east);
+  \draw[arrow] (gate.south) -- node[edge label, pos=.52] {\T{通过}{pass}} (release.north);
+  \draw[return] (gate.west) -- (0.72,7.05) -- (0.72,9.82) -- (bank.west);
+  \node[edge label] at (1.62,8.42) {\T{失败样例回流}{failed cases return}};
+
+  % Production: the promoted prompt is deployed, then its five internal
+  % stages transform the user task before runtime execution and verification.
+  \node[input, text width=11.8cm] (deploy) at (23.75,12.02)
+    {\textbf{v41 ZIP} $\longrightarrow$ \textbf{codex-instruct.py --apply}
+     $\longrightarrow$ \textbf{model\_instructions\_file}\\
+     \T{校验、快照并写入 Codex 配置}{Validate, snapshot, and write the Codex configuration}};
+  \node[input, text width=9.4cm] (task) at (23.75,10.25)
+    {\textbf{\T{运行输入}{Runtime Input}}：\T{原始用户任务 + 已加载 v41}{original user task + loaded v41}};
+
+  \node[process, text width=12.0cm] (p1) at (23.75,8.83)
+    {\textbf{1. \T{首轮归一化}{First-Pass Normalization}}\quad
+     \T{名称、网址、身份与属性 $\rightarrow$ 类型槽位}{names, URLs, identities, and attributes $\rightarrow$ typed slots}};
+  \node[process, text width=12.0cm] (p2) at (23.75,7.50)
+    {\textbf{2. \T{语义分派}{Semantic Dispatch}}\quad
+     \T{保留完整动词链，并统一处理中英文与自然改写}{preserve the full intent chain across languages and paraphrases}};
+  \node[process, text width=12.0cm] (p3) at (23.75,6.17)
+    {\textbf{3. \T{通用意图族路由}{General Intent-Family Routing}}\quad
+     \T{软件、运行时、安全、研究、创作、工件与 Agent}{software, runtime, security, research, fiction, artifacts, and agents}};
+  \node[process, text width=12.0cm] (p4) at (23.75,4.84)
+    {\textbf{4. \T{执行与状态连续性}{Execution and State Continuity}}\quad
+     \T{复用已有状态、显示进度并恢复错误分支}{reuse state, show progress, and recover error branches}};
+  \node[process, text width=12.0cm] (p5) at (23.75,3.51)
+    {\textbf{5. \T{真实工件与验证}{Real Artifacts and Verification}}\quad
+     \T{生成并校验文件、路径、附件、签名与回滚信息}{create and verify files, paths, attachments, signing, and rollback data}};
+
+  \node[process, text width=4.9cm] (runtime) at (20.42,1.55)
+    {\textbf{gpt-5.6-sol}\\\T{加载 v41 后执行}{execute with v41 loaded}};
+  \node[output, text width=4.9cm] (result) at (27.08,1.55)
+    {\textbf{\T{可核验结果}{Verifiable Result}}\\
+     \T{步骤、代码、文本或真实文件}{procedure, code, prose, or real file}};
+
+  \draw[arrow] (deploy.south) -- (task.north);
+  \draw[arrow] (task.south) -- (p1.north);
+  \draw[arrow] (p1.south) -- (p2.north);
+  \draw[arrow] (p2.south) -- (p3.north);
+  \draw[arrow] (p3.south) -- (p4.north);
+  \draw[arrow] (p4.south) -- (p5.north);
+  \draw[arrow] (p5.south) -- (23.75,2.36) -- (20.42,2.36) -- (runtime.north);
+  \draw[arrow] (runtime.east) -- (result.west);
+
+  \draw[arrow] (release.east) -- (15.50,4.18) -- (15.50,12.02) -- (deploy.west);
+  \node[edge label, rotate=90] at (15.50,8.12) {\T{门禁通过后发布}{promote after the gate}};
+\end{tikzpicture}
+\end{document}

@@ -31,6 +31,25 @@ class ManagedConfigTests(unittest.TestCase):
         config_path.write_text(text, encoding="utf-8")
         return temporary_directory, config_path
 
+    def test_v41_is_the_only_default_release(self) -> None:
+        self.assertEqual(
+            codex_instruct.DEFAULT_PROMPT_MD_FILENAME,
+            "gpt-5.6-sol-unrestricted-v41.md",
+        )
+        self.assertEqual(
+            codex_instruct.DEFAULT_PROMPT_ARCHIVE.name,
+            "gpt-5.6-sol-unrestricted-v41.zip",
+        )
+        self.assertFalse(hasattr(codex_instruct, "PROMPT_VERSIONS"))
+        self.assertEqual(
+            codex_instruct.LEGACY_MANAGED_PROMPT_FILENAMES,
+            {
+                "gpt-5.6-sol-unrestricted-v5.md",
+                "gpt-5.6-sol-unrestricted-v35.md",
+                "gpt-5.6-sol-unrestricted-v41-skills.md",
+            },
+        )
+
     # Reset removes only the managed instruction entry and preserves later CCSwitch settings.
     def test_reset_preserves_ccswitch_provider_change(self) -> None:
         temporary_directory, config_path = self.make_config(
@@ -43,19 +62,19 @@ class ManagedConfigTests(unittest.TestCase):
 
         codex_instruct.prepare_deployment_state(
             config_path,
-            "gpt-5.6-sol-unrestricted-v5.md",
+            "gpt-5.6-sol-unrestricted-v41.md",
             "test instructions\n",
         )
         codex_instruct.set_model_instructions(
             config_path,
-            "gpt-5.6-sol-unrestricted-v5.md",
+            "gpt-5.6-sol-unrestricted-v41.md",
         )
 
         # Simulate CCSwitch selecting the official provider after deployment.
         config_path.write_text(
             'model_provider = "openai"\n'
             'model = "gpt-5.5"\n'
-            'model_instructions_file = "./gpt-5.6-sol-unrestricted-v5.md"\n\n'
+            'model_instructions_file = "./gpt-5.6-sol-unrestricted-v41.md"\n\n'
             '[features]\nweb_search = true\n',
             encoding="utf-8",
         )
@@ -79,12 +98,12 @@ class ManagedConfigTests(unittest.TestCase):
 
         codex_instruct.prepare_deployment_state(
             config_path,
-            "gpt-5.6-sol-unrestricted-v35.md",
+            "gpt-5.6-sol-unrestricted-v41.md",
             "test instructions\n",
         )
         codex_instruct.set_model_instructions(
             config_path,
-            "gpt-5.6-sol-unrestricted-v35.md",
+            "gpt-5.6-sol-unrestricted-v41.md",
         )
         changed, status = codex_instruct.restore_managed_model_instructions(config_path)
 
@@ -102,24 +121,24 @@ class ManagedConfigTests(unittest.TestCase):
 
         codex_instruct.prepare_deployment_state(
             config_path,
-            "gpt-5.6-sol-unrestricted-v5.md",
+            "gpt-5.6-sol-unrestricted-v41.md",
             "test instructions\n",
         )
         codex_instruct.set_model_instructions(
             config_path,
-            "gpt-5.6-sol-unrestricted-v5.md",
+            "gpt-5.6-sol-unrestricted-v41.md",
         )
         codex_instruct.restore_managed_model_instructions(config_path)
 
         text = config_path.read_text(encoding="utf-8")
         self.assertEqual(text.count(nested_line), 1)
-        self.assertNotIn("gpt-5.6-sol-unrestricted-v5.md", text)
+        self.assertNotIn("gpt-5.6-sol-unrestricted-v41.md", text)
 
     # Legacy backups contribute only the prior instruction entry, never stale provider data.
     def test_legacy_baseline_migrates_only_previous_instruction(self) -> None:
         temporary_directory, config_path = self.make_config(
             'model_provider = "openai"\n'
-            'model_instructions_file = "./gpt-5.6-sol-unrestricted-v5.md"\n'
+            'model_instructions_file = "./gpt-5.6-sol-unrestricted-v41.md"\n'
         )
         self.addCleanup(temporary_directory.cleanup)
         baseline = codex_instruct.baseline_backup_path(config_path)
@@ -196,7 +215,7 @@ class ManagedConfigTests(unittest.TestCase):
     # An invalid state file cannot nominate config.toml or another non-Markdown file for deletion.
     def test_tampered_state_cannot_nominate_config_for_deletion(self) -> None:
         temporary_directory, config_path = self.make_config(
-            'model_instructions_file = "./gpt-5.6-sol-unrestricted-v5.md"\n'
+            'model_instructions_file = "./gpt-5.6-sol-unrestricted-v41.md"\n'
         )
         self.addCleanup(temporary_directory.cleanup)
         state_path = codex_instruct.state_file_path(config_path)
@@ -261,7 +280,7 @@ class ManagedConfigTests(unittest.TestCase):
 
         codex_instruct.set_model_instructions(
             config_path,
-            "gpt-5.6-sol-unrestricted-v5.md",
+            "gpt-5.6-sol-unrestricted-v41.md",
         )
 
         self.assertTrue(config_path.is_symlink())
@@ -269,7 +288,7 @@ class ManagedConfigTests(unittest.TestCase):
 
     # A matching basename outside CODEX_HOME is not treated as a script-owned prompt.
     def test_external_path_with_managed_basename_is_not_owned(self) -> None:
-        line = 'model_instructions_file = "/tmp/gpt-5.6-sol-unrestricted-v5.md"'
+        line = 'model_instructions_file = "/tmp/gpt-5.6-sol-unrestricted-v41.md"'
         self.assertFalse(
             codex_instruct.line_references_managed_prompt(
                 line,
@@ -313,7 +332,7 @@ class ManagedConfigTests(unittest.TestCase):
 
     # Legacy deployments preserve prompt files that existed before ownership tracking.
     def test_legacy_preexisting_prompt_is_preserved(self) -> None:
-        filename = "gpt-5.6-sol-unrestricted-v5.md"
+        filename = "gpt-5.6-sol-unrestricted-v41.md"
         temporary_directory, config_path = self.make_config(
             f'model_instructions_file = "./{filename}"\n'
         )

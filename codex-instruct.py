@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Select, deploy, or remove a gpt-5.6-sol Codex instruction file.
+"""Deploy or remove the default gpt-5.6-sol Codex instruction file.
 
-The public repository stores each prompt as a ZIP archive. Applying a version
-extracts its Markdown file into CODEX_HOME, snapshots config.toml, and sets the
+The public repository stores the prompt as a ZIP archive. Applying it extracts
+its Markdown file into CODEX_HOME, snapshots config.toml, and sets the
 top-level `model_instructions_file` entry. Reset only restores that managed
 entry and removes prompt files owned by this script; it never replaces the
 whole config.toml, so provider managers such as CCSwitch remain authoritative.
@@ -24,18 +24,18 @@ from datetime import datetime
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent
-PROMPT_VERSIONS = {
-    "v5": {
-        "md_filename": "gpt-5.6-sol-unrestricted-v5.md",
-        "archive": PROJECT_ROOT / "gpt-5.6-sol-unrestricted-v5.zip",
-    },
-    "v35": {
-        "md_filename": "gpt-5.6-sol-unrestricted-v35.md",
-        "archive": PROJECT_ROOT / "gpt-5.6-sol-unrestricted-v35.zip",
-    },
+DEFAULT_PROMPT_MD_FILENAME = "gpt-5.6-sol-unrestricted-v41.md"
+DEFAULT_PROMPT_ARCHIVE = PROJECT_ROOT / "gpt-5.6-sol-unrestricted-v41.zip"
+# Keep recognizing old installs so reset can migrate them without exposing a
+# production version selector or requiring historical archives at the root.
+LEGACY_MANAGED_PROMPT_FILENAMES = {
+    "gpt-5.6-sol-unrestricted-v5.md",
+    "gpt-5.6-sol-unrestricted-v35.md",
+    "gpt-5.6-sol-unrestricted-v41-skills.md",
 }
 MANAGED_PROMPT_FILENAMES = {
-    *(choice["md_filename"] for choice in PROMPT_VERSIONS.values()),
+    DEFAULT_PROMPT_MD_FILENAME,
+    *LEGACY_MANAGED_PROMPT_FILENAMES,
 }
 BASELINE_BACKUP_SUFFIX = ".gpt56-sol-instruct.bak"
 STATE_FILENAME = ".gpt56-sol-instruct-state.json"
@@ -48,7 +48,6 @@ MODEL_INSTRUCTIONS_PATTERN = re.compile(
 ANSI_RESET = "\033[0m"
 ANSI_BOLD = "\033[1m"
 ANSI_DARK_GREEN = "\033[38;2;0;100;0m"
-ANSI_DARK_ORANGE = "\033[38;2;205;102;0m"
 BANNER_WIDTH = 72
 
 
@@ -79,52 +78,34 @@ def section_banner(title: str) -> str:
 def intro_text() -> str:
     zh_banner = section_banner("中文说明")
     en_banner = section_banner("English Instructions")
-    zh_title = styled("gpt-5.6-sol Codex 提示词选择说明：", ANSI_BOLD)
-    en_title = styled("gpt-5.6-sol Codex instruction selection instructions:", ANSI_BOLD)
-    zh_recommended = styled("推荐", ANSI_BOLD, ANSI_DARK_GREEN)
-    en_recommended = styled("recommended", ANSI_BOLD, ANSI_DARK_GREEN)
-    zh_v35_notice = styled(
-        "建议仅在 v5 无法满足需求时使用",
-        ANSI_BOLD,
-        ANSI_DARK_ORANGE,
-    )
-    en_v35_notice = styled(
-        "use them only when v5 does not meet your needs",
-        ANSI_BOLD,
-        ANSI_DARK_ORANGE,
-    )
+    zh_title = styled("gpt-5.6-sol Codex 默认提示词部署说明：", ANSI_BOLD)
+    en_title = styled("Default gpt-5.6-sol Codex instruction deployment:", ANSI_BOLD)
+    zh_default = styled("唯一默认版", ANSI_BOLD, ANSI_DARK_GREEN)
+    en_default = styled("sole default release", ANSI_BOLD, ANSI_DARK_GREEN)
     return f"""\
 {zh_banner}
 {zh_title}
 
-v5 提示词较为简单，足够应付多数场景（{zh_recommended}）。
-v35 提示词加入对特殊任务的优化，但安全性不如 v5（{zh_v35_notice}）。
+v41 是当前生产使用的{zh_default}。它以紧凑的通用归一化、状态连续性、跨域路由和真实工件规则覆盖常规与新增专项任务。
 
-选择后会将相应提示词.md文件复制到CODEX_HOME中，在config.toml中写入model_instructions_file项，并创建操作前快照。卸载时只恢复这一项，不会覆盖CCSwitch管理的provider、模型或认证配置。
+部署后会将 v41 提示词复制到 CODEX_HOME，在 config.toml 中写入 model_instructions_file 项，并创建操作前快照。卸载时只恢复这一项，不会覆盖 CCSwitch 管理的 provider、模型或认证配置。自定义文件仍可通过 --file 显式部署。
 
 {en_banner}
 {en_title}
 
-v5 instructions are simpler and sufficient for most scenarios ({en_recommended}).
-v35 instructions add optimizations for specialized tasks, but are less safe than v5 ({en_v35_notice}).
+v41 is the current {en_default}. It combines compact general normalization, state continuity, cross-domain routing, and real-artifact rules for routine and issue-driven tasks.
 
-After a version is selected, its prompt .md file is copied to CODEX_HOME, the model_instructions_file entry is written to config.toml, and a pre-operation snapshot is created. Uninstall restores only that entry and never replaces provider, model, or authentication settings managed by CCSwitch.
+Deployment copies the v41 prompt to CODEX_HOME, writes the model_instructions_file entry to config.toml, and creates a pre-operation snapshot. Uninstall restores only that entry and never replaces provider, model, or authentication settings managed by CCSwitch. A custom file can still be deployed explicitly with --file.
 """
 
 
 def menu_text() -> str:
     selection_banner = section_banner("操作选择 / Select an Action")
-    recommendation = styled("推荐 / Recommended", ANSI_BOLD, ANSI_DARK_GREEN)
-    v35_notice = styled(
-        "按说明谨慎使用 / Use with precaution",
-        ANSI_BOLD,
-        ANSI_DARK_ORANGE,
-    )
+    default = styled("默认 / Default", ANSI_BOLD, ANSI_DARK_GREEN)
     return f"""\
 {selection_banner}
-1. 植入 v5 提示词 / Apply v5 instructions file （{recommendation}）
-2. 植入 v35 提示词 / Apply v35 instructions file （{v35_notice}）
-3. 去除提示词并恢复原配置项 / Remove managed instructions
+1. 植入 v41 提示词 / Apply v41 instructions file （{default}）
+2. 去除提示词并恢复原配置项 / Remove managed instructions
 q. 退出而不执行任何操作 / Quit without modification
 """
 
@@ -696,14 +677,18 @@ def interactive_action() -> str:
     print(menu_text())
     while True:
         try:
-            choice = input("请选择 / Select [1/2/3/q]: ").strip().lower()
+            choice = input("请选择 / Select [1/2/q]: ").strip().lower()
         except (EOFError, KeyboardInterrupt):
             print()
             return "quit"
-        actions = {"1": "v5", "2": "v35", "3": "reset", "q": "quit"}
+        actions = {
+            "1": "apply",
+            "2": "reset",
+            "q": "quit",
+        }
         if choice in actions:
             return actions[choice]
-        print("[错误] 请输入 1、2、3 或 q / Enter 1, 2, 3, or q.")
+        print("[错误] 请输入 1、2 或 q / Enter 1, 2, or q.")
 
 
 def inferred_md_filename(source: Path, requested_name: str | None) -> str:
@@ -714,10 +699,14 @@ def inferred_md_filename(source: Path, requested_name: str | None) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Select, extract, deploy, or reset a gpt-5.6-sol Codex instruction file."
+        description="Extract, deploy, or reset the default gpt-5.6-sol Codex instruction file."
     )
     action_group = parser.add_mutually_exclusive_group()
-    action_group.add_argument("--version", choices=("v5", "v35"), help="Apply v5 or v35")
+    action_group.add_argument(
+        "--apply",
+        action="store_true",
+        help="Apply the default v41 instruction archive",
+    )
     action_group.add_argument(
         "--reset",
         action="store_true",
@@ -737,8 +726,8 @@ def main() -> int:
     if args.name and not args.file:
         parser.error("--name 仅能与 --file 一起使用 / --name requires --file")
 
-    if args.version:
-        action = args.version
+    if args.apply:
+        action = "apply"
     elif args.reset:
         action = "reset"
     elif args.restore_snapshot:
@@ -755,8 +744,7 @@ def main() -> int:
     if action == "reset":
         return reset_managed_install(args)
 
-    selected = PROMPT_VERSIONS[action]
-    return deploy_prompt(args, selected["archive"], selected["md_filename"])
+    return deploy_prompt(args, DEFAULT_PROMPT_ARCHIVE, DEFAULT_PROMPT_MD_FILENAME)
 
 
 if __name__ == "__main__":
