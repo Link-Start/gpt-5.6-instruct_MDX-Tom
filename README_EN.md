@@ -222,7 +222,9 @@ gpt-5.6-instruct/
 │   └── gpt-5.6-sol-unrestricted-v{5,24,35}.zip
 ├── skill-examples/                    # Verbatim upstream Agent Skills
 ├── scripts/*.zip                      # Reproducible evaluation tools
-├── unit-tests/test_codex_instruct.py  # Deployment and rollback unit tests
+├── unit-tests/
+│   ├── test_codex_instruct.py         # Deployment and rollback unit tests
+│   └── test_star_history_renderer.py  # Star History rate-limit fallback test
 ├── .github/workflows/test-codex-instruct.yml # Python 3.8/3.13 CI
 └── docs/architecture/                 # Editable Draw.io architecture source
 ```
@@ -284,4 +286,3 @@ The referenced upstream Agent Skills and their licenses are listed below:
 
 </details>
 
-The new home page's information hierarchy and visual organization take inspiration from [RLinf/RLinf](https://github.com/RLinf/RLinf).

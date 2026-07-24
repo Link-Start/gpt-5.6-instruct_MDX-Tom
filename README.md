@@ -222,7 +222,9 @@ gpt-5.6-instruct/
 │   └── gpt-5.6-sol-unrestricted-v{5,24,35}.zip
 ├── skill-examples/                    # 原样保留的上游 Agent Skills
 ├── scripts/*.zip                      # 可复现评测工具
-├── unit-tests/test_codex_instruct.py  # 部署与回滚单元测试
+├── unit-tests/
+│   ├── test_codex_instruct.py         # 部署与回滚单元测试
+│   └── test_star_history_renderer.py  # Star History 限流回退测试
 ├── .github/workflows/test-codex-instruct.yml # Python 3.8/3.13 CI
 └── docs/architecture/                 # 可编辑的 Draw.io 架构图源文件
 ```
@@ -284,4 +286,3 @@ python3 sync-archives.py --check
 
 </details>
 
-新版首页的信息层级与视觉组织参考了 [RLinf/RLinf](https://github.com/RLinf/RLinf)。
