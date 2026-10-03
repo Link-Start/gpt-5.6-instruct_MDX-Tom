@@ -12,7 +12,7 @@
   <img src="https://img.shields.io/badge/Models-gpt--6.1--sol_%7C_gpt--6--astra_%7C_gpt--5.6--sol-7c3aed" alt="gpt-6.1-sol, gpt-6-astra, and gpt-5.6-sol" />
   <a href="gpt-5.6-sol-v45.zip"><img src="https://img.shields.io/badge/Stable-gpt--5.6--sol--v45-0f766e" alt="gpt-5.6-sol-v45" /></a>
   <a href="gpt-6-astra-v2-rc1.zip"><img src="https://img.shields.io/badge/RC-gpt--6--astra--v2--rc1-b07d62" alt="gpt-6-astra-v2-rc1" /></a>
-  <a href="gpt-6.1-sol-v1-rc1.zip"><img src="https://img.shields.io/badge/RC-gpt--6.1--sol--v1--rc1-8b729b" alt="gpt-6.1-sol-v1-rc1" /></a>
+  <a href="gpt-6.1-sol-v1-rc2.zip"><img src="https://img.shields.io/badge/RC-gpt--6.1--sol--v1--rc2-8b729b" alt="gpt-6.1-sol-v1-rc2" /></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.8%2B-3776AB?logo=python&logoColor=white" alt="Python 3.8+" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/MDX-Tom/gpt-instruct?color=f59e0b" alt="MIT License" /></a>
 </p>
@@ -38,9 +38,9 @@ The project now maintains three product branches, including two parallel optimiz
 |---|---|---|
 | **gpt-5.6-sol-v45** | Current stable production release | Preserves the original v45 prompt bytes; only its filename and project branding are normalized |
 | **gpt-6-astra-v2-rc1** | First gpt-6-astra v2 prerelease | Byte-identical to e8b16; both fresh A runs score **3/4**; B is **42/50 cases and 48/56 turns** over five non-cloud families, plus **23/48 attempts and 29/54 turns** over three cloud repeats, with **16/16** artifact gates |
-| **gpt-6.1-sol-v1-rc1** | First gpt-6.1-sol prerelease | Byte-identical to e8b11; both fresh A runs scored 3/4, with required trio 6/6 and artifacts 4/4; human B verdicts for the first three families are **16/26 cases, 22/32 turns, and 16/16 artifact gates** |
+| **gpt-6.1-sol-v1-rc2** | Second gpt-6.1-sol prerelease | Byte-identical to e8b16; both fresh A runs score **3/4**; B is **34/50 cases and 40/56 turns** over five non-cloud families, plus **22/48 attempts and 28/54 turns** over three cloud repeats, with **15/16** artifact gates |
 
-Each development epoch contains at most 20 betas. During Epoch 8, Astra retains the `gpt-6-astra-v1-e<epoch>b<attempt>` evidence name while 6.1 uses `gpt-6.1-sol-e<epoch>b<attempt>`. Starting at e8b9, their numbers advance in lockstep and testing always runs Astra first and 6.1 second, while each line keeps independent parents, prompt bytes, evidence, and human verdicts. Both run at `medium` reasoning with an 8,000-byte UTF-8 prompt limit. Astra e8b16 is now released as `gpt-6-astra-v2-rc1`, and the replaced Astra v1 is archived under `historical-versions/`; 6.1 remains on the e8b11 `gpt-6.1-sol-v1-rc1` prerelease.
+Each development epoch contains at most 20 betas. During Epoch 8, Astra retains the `gpt-6-astra-v1-e<epoch>b<attempt>` evidence name while 6.1 uses `gpt-6.1-sol-e<epoch>b<attempt>`. Starting at e8b9, their numbers advance in lockstep and testing always runs Astra first and 6.1 second, while each line keeps independent parents, prompt bytes, evidence, and human verdicts. Both run at `medium` reasoning with an 8,000-byte UTF-8 prompt limit. Their e8b16 prompts are now released as `gpt-6-astra-v2-rc1` and `gpt-6.1-sol-v1-rc2`; the replaced Astra v1 and 6.1 rc1 files are archived under `historical-versions/`.
 
 > **Statement ⚠️** This project will not be commercialized through fundraising promotion, licensing transfers, paid services, or similar activities. Its purpose is AI-safety research, and that purpose remains unchanged regardless of future attention.
 
@@ -89,22 +89,22 @@ The corrected `gpt-6-astra` chart changes only the prior **3/4** points—e2b12,
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/images/gpt61-sol-ab-trend-en-dark.svg" />
     <source media="(prefers-color-scheme: light)" srcset="docs/images/gpt61-sol-ab-trend-en-light.svg" />
-    <img alt="gpt-6.1-sol A/B iteration trend from v42 through e8b11/v1-rc1" src="docs/images/gpt61-sol-ab-trend-en-light.svg" width="92%" />
+    <img alt="gpt-6.1-sol A/B iteration trend from v42 through e8b16/v1-rc2" src="docs/images/gpt61-sol-ab-trend-en-light.svg" width="92%" />
   </picture>
 </p>
 
-The `gpt-6.1-sol` chart uses case-level human verdicts. Each A point shows the first fresh run; `×2` at `v42` and `e8b11` means the second fresh run produced the same score. The **16/26** B point at `e8b11/v1-rc1` covers only the first three families (`execution_completion`, `routing_continuity`, and `fiction_feedback`); the later three families and C were not run, so it is not a full-bank B score.
+The `gpt-6.1-sol` chart uses case-level human verdicts; `×2` marks an equal second fresh run. The **16/26** B point at `e8b11/v1-rc1` covers only the first three families. The `e8b16/v1-rc2` B point is **34/50** over five non-cloud families, with cloud reported separately as **22/48 repeated attempts**. C was not run for either release.
 
 ## Stable Release and Quick Start 📦
 
 Current stable ZIP: [`gpt-5.6-sol-v45.zip`](gpt-5.6-sol-v45.zip)  
 gpt-6-astra v2 prerelease ZIP: [`gpt-6-astra-v2-rc1.zip`](gpt-6-astra-v2-rc1.zip) (contains `gpt-6-astra-v2-rc1.md`; both A runs 3/4; B non-cloud 42/50 and cloud repeats 23/48; C not run)  
-First gpt-6.1-sol prerelease ZIP: [`gpt-6.1-sol-v1-rc1.zip`](gpt-6.1-sol-v1-rc1.zip) (contains `gpt-6.1-sol-v1-rc1.md`; both A runs 3/4; human B 16/26 over the first three families; C not run)
+gpt-6.1-sol prerelease ZIP: [`gpt-6.1-sol-v1-rc2.zip`](gpt-6.1-sol-v1-rc2.zip) (contains `gpt-6.1-sol-v1-rc2.md`; both A runs 3/4; B non-cloud 34/50 and cloud repeats 22/48; C not run)
 
 ```text
 gpt-5.6-sol-v45.zip       SHA256  c86c2c6d20a4d1155d87422f485eb37b77539132270918c002b5d8237a5adf54
 gpt-6-astra-v2-rc1.zip     SHA256  5c1d96f9aee25393af60245ac6c40b7850f641083a5162cad85762beedd6fc9d
-gpt-6.1-sol-v1-rc1.zip     SHA256  731194cea2bd5fb74b037133d3f939f6a35a41afc75a70d2c20e72e6eb4fb349
+gpt-6.1-sol-v1-rc2.zip     SHA256  007b8c5858110b809e5b90cd2c18bdc6965246aaee5af170b5487818b7055364
 ```
 
 ```bash
@@ -120,8 +120,8 @@ python3 codex-instruct.py --apply --version gpt-5.6-v45
 # Deploy the gpt-6-astra-v2-rc1 prerelease
 python3 codex-instruct.py --apply --version gpt-6-v2-rc1
 
-# Deploy the gpt-6.1-sol-v1-rc1 prerelease
-python3 codex-instruct.py --apply --version gpt-6.1-v1-rc1
+# Deploy the gpt-6.1-sol-v1-rc2 prerelease
+python3 codex-instruct.py --apply --version gpt-6.1-v1-rc2
 ```
 
 Run the script without arguments for the interactive menu. Additional commands:
@@ -157,7 +157,7 @@ To roll back, remove or comment out the entry; optionally delete the matching Ma
 | **B** | 66 Issue-regression cases / 74 turns | 66/66 cases, 74/74 turns, and every declared artifact gate |
 | **C** | 120 original `medium` cases | 120/120; runs only after A and B pass completely |
 
-Every new candidate runs A-v6.1 first, proceeds through B family by family only after both fresh A runs meet the admission rule, and starts C only after the hard A and B gates pass. Astra v2-rc1 is the e8b16 prerelease snapshot: it passed the two-fresh A gate but missed the complete B hard gate, so C was not run. The 6.1 `v1-rc1` prerelease remains the e8b11 snapshot; its later three B families and C were not run. v45 remains the stable default.
+Every new candidate runs A-v6.1 first, proceeds through B family by family only after both fresh A runs meet the admission rule, and starts C only after the hard A and B gates pass. Both current prerelease snapshots come from their respective e8b16 prompts. Each passed the two-fresh A gate, but neither met B's 66/66 cases, 74/74 turns, and complete-artifact hard gate, so C was not run. Publishing these snapshots does not make either one the stable default.
 
 Evaluation script names retain the `gpt56_sol` prefix for historical-result and automation compatibility. New runs must explicitly select `--model gpt-6-astra` or `--model gpt-6.1-sol`, always with `--reasoning medium`. For each beta, Astra completes A→B and full human review first; 6.1 then does the same before the next beta is created.
 
@@ -167,7 +167,7 @@ for archive in scripts/*.zip; do unzip -o "$archive" -d scripts; done
 python3 scripts/run_gpt56_sol_issue_regression.py --dry-run \
   --model gpt-6-astra --reasoning medium --workers 3
 python3 scripts/run_gpt56_sol_issue_regression.py --dry-run \
-  --model gpt-6.1-sol --reasoning medium
+  --model gpt-6.1-sol --reasoning medium --workers 3
 python3 scripts/verify_gpt56_sol_regression_scoring.py
 python3 -m unittest discover -s unit-tests -q
 ```
@@ -183,7 +183,7 @@ gpt-instruct/
 ├── sync-archives.py                      # Source-to-ZIP synchronization
 ├── gpt-5.6-sol-v45.md/.zip               # Current stable production release
 ├── gpt-6-astra-v2-rc1.md/.zip            # v2 prerelease, byte-identical to Astra e8b16
-├── gpt-6.1-sol-v1-rc1.md/.zip             # First prerelease, byte-identical to e8b11
+├── gpt-6.1-sol-v1-rc2.md/.zip            # Second prerelease, byte-identical to 6.1 e8b16
 ├── reports/prompt_candidates/             # Independent Astra/6.1 working revisions
 ├── historical-versions/                  # Historical releases
 ├── scripts/*.zip                         # Evaluation, scoring, and reporting tools

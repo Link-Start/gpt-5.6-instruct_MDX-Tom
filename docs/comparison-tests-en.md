@@ -22,20 +22,21 @@ Every evaluation and report build uses disposable `HOME`, `CODEX_HOME`, `XDG_CON
 
 ### Dual-model discipline starting at e8b9
 
-Local Git branches are `gpt-5.6-sol`, `gpt-6-astra`, and `gpt-6.1-sol`. Astra and 6.1 fork from the same-byte e8b9 candidate while keeping independent parents, epoch ledgers, raw A/B outputs, and human verdicts. Every beta tests Astra first and 6.1 second; numbering advances in lockstep only after both lines receive per-case human review and a next-direction decision. Mechanisms may transfer across lines, but scores never merge. Astra e8b16 is released as `gpt-6-astra-v2-rc1`; that collection used `workers=2` and remains separate from the current `workers=3` identity. 6.1 remains on the e8b11 `gpt-6.1-sol-v1-rc1` prerelease. Both v42 A-v6 runs scored 0/4 with required trio 0/3 and technical artifacts 0/2. The user then explicitly skipped v42 B and resumed later-version optimization, so v42 B and the not-yet-started e6b12 reference remain `not_run`.
+Local Git branches are `gpt-5.6-sol`, `gpt-6-astra`, and `gpt-6.1-sol`. Astra and 6.1 fork from the same-byte e8b9 candidate while keeping independent parents, epoch ledgers, raw A/B outputs, and human verdicts. Every beta tests Astra first and 6.1 second; numbering advances in lockstep only after both lines receive per-case human review and a next-direction decision. Mechanisms may transfer across lines, but scores never merge. Their e8b16 prompts are released as `gpt-6-astra-v2-rc1` and `gpt-6.1-sol-v1-rc2`; that collection used `workers=2` and remains separate from the current `workers=3` identity. Both v42 A-v6 runs scored 0/4 with required trio 0/3 and technical artifacts 0/2. The user then explicitly skipped v42 B and resumed later-version optimization, so v42 B and the not-yet-started e6b12 reference remain `not_run`.
 
 > [!NOTE]
 > Raw run data is excluded by `.gitignore` by default. Evidence paths on this page refer to local evaluation artifacts. The v42/v44/v45 runs below are **comparison-only** evidence under one frozen method identity; they do not mean that each version completed the current A→B→C release gate.
 
-## Astra e8b16 Prerelease Snapshot
+## e8b16 Dual-Prerelease Snapshots
 
-Astra e8b16 uses `medium`; Issue A/B collection used `workers=2`, the standalone `prompt_instruct` probe used one process, and every output was read in full. Its two fresh A runs aggregate to **6/8 cases, required trio 6/6, technical artifacts 4/4, prompt robustness 2/2, and fiction 0/2**. The cloud family uses three fixed repeats, so non-cloud base results and cloud repeated attempts remain separate rather than being collapsed into an invented 66-case score.
+Both e8b16 lines use `medium`; Issue A/B collection used `workers=2`, the standalone `prompt_instruct` probe used one process, and every output was read in full. Each line's two fresh A runs aggregate to **6/8 cases, required trio 6/6, technical artifacts 4/4, prompt robustness 2/2, and fiction 0/2**. The cloud family uses three fixed repeats, so non-cloud base results and cloud repeated attempts remain separate rather than being collapsed into an invented 66-case score.
 
 | Release | Parent | Five non-cloud B families | Three-repeat cloud B | Artifact gates | C |
 |---|---|---:|---:|---:|---|
 | `gpt-6-astra-v2-rc1` | Astra e8b16 | **42/50 cases · 48/56 turns** | **23/48 attempts · 29/54 turns** | **16/16** | Not run |
+| `gpt-6.1-sol-v1-rc2` | 6.1 e8b16 | **34/50 cases · 40/56 turns** | **22/48 attempts · 28/54 turns** | **15/16** | Not run |
 
-This snapshot does not meet B's 66/66 cases, 74/74 turns, and complete-artifact hard gate, so it is an explicit prerelease snapshot rather than the stable default. Its core package is [`gpt-6-astra-v2-rc1.zip`](../gpt-6-astra-v2-rc1.zip); the replaced Astra v1 package is archived under [`historical-versions/`](../historical-versions/).
+Neither snapshot meets B's 66/66 cases, 74/74 turns, and complete-artifact hard gate, so both are explicit prerelease snapshots rather than the stable default. Core packages are [`gpt-6-astra-v2-rc1.zip`](../gpt-6-astra-v2-rc1.zip) and [`gpt-6.1-sol-v1-rc2.zip`](../gpt-6.1-sol-v1-rc2.zip); the replaced Astra v1 and 6.1 rc1 packages are archived under [`historical-versions/`](../historical-versions/).
 
 ## gpt-6-astra-v1: From rc1 to Formal v1
 

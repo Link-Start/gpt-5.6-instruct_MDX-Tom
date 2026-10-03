@@ -34,9 +34,9 @@ PROMPT_VERSIONS: dict[str, tuple[Path, str]] = {
         PROJECT_ROOT / "gpt-6-astra-v2-rc1.zip",
         "gpt-6-astra-v2-rc1.md",
     ),
-    "gpt-6.1-v1-rc1": (
-        PROJECT_ROOT / "gpt-6.1-sol-v1-rc1.zip",
-        "gpt-6.1-sol-v1-rc1.md",
+    "gpt-6.1-v1-rc2": (
+        PROJECT_ROOT / "gpt-6.1-sol-v1-rc2.zip",
+        "gpt-6.1-sol-v1-rc2.md",
     ),
 }
 DEFAULT_PROMPT_ARCHIVE, DEFAULT_PROMPT_MD_FILENAME = PROMPT_VERSIONS[
@@ -53,6 +53,7 @@ LEGACY_MANAGED_PROMPT_FILENAMES = {
     "gpt-5.6-sol-unrestricted-v42.md",
     "gpt-6-astra-v1-rc1.md",
     "gpt-6-astra-v1.md",
+    "gpt-6.1-sol-v1-rc1.md",
 }
 MANAGED_PROMPT_FILENAMES = {
     *(md_filename for _, md_filename in PROMPT_VERSIONS.values()),
@@ -107,14 +108,14 @@ def intro_text() -> str:
 {zh_banner}
 {zh_title}
 
-gpt-5.6-sol-v45 是当前生产使用的{zh_default}；gpt-6-astra-v2-rc1 与 gpt-6.1-sol-v1-rc1 是可选预发布版。
+gpt-5.6-sol-v45 是当前生产使用的{zh_default}；gpt-6-astra-v2-rc1 与 gpt-6.1-sol-v1-rc2 是可选预发布版。
 
 部署后会将所选 ZIP 内提示词复制到 CODEX_HOME，在 config.toml 中写入 model_instructions_file 项，并创建操作前快照。卸载时只恢复这一项，不会覆盖 CCSwitch 管理的 provider、模型或认证配置。自定义文件仍可通过 --file 显式部署。
 
 {en_banner}
 {en_title}
 
-gpt-5.6-sol-v45 is the current {en_default}; gpt-6-astra-v2-rc1 and gpt-6.1-sol-v1-rc1 are optional prereleases.
+gpt-5.6-sol-v45 is the current {en_default}; gpt-6-astra-v2-rc1 and gpt-6.1-sol-v1-rc2 are optional prereleases.
 
 Deployment copies the selected ZIP prompt to CODEX_HOME, writes the model_instructions_file entry to config.toml, and creates a pre-operation snapshot. Uninstall restores only that entry and never replaces provider, model, or authentication settings managed by CCSwitch. A custom file can still be deployed explicitly with --file.
 """
@@ -127,7 +128,7 @@ def menu_text() -> str:
 {selection_banner}
 1. gpt-5.6-v45 → gpt-5.6-sol-v45 （{default}）
 2. gpt-6-v2-rc1 → gpt-6-astra-v2-rc1 （prerelease）
-3. gpt-6.1-v1-rc1 → gpt-6.1-sol-v1-rc1 （prerelease）
+3. gpt-6.1-v1-rc2 → gpt-6.1-sol-v1-rc2 （prerelease）
 4. 去除提示词并恢复原配置项 / Remove managed instructions
 q. 退出而不执行任何操作 / Quit without modification
 """
@@ -707,7 +708,7 @@ def interactive_action() -> str:
         actions = {
             "1": "apply:gpt-5.6-v45",
             "2": "apply:gpt-6-v2-rc1",
-            "3": "apply:gpt-6.1-v1-rc1",
+            "3": "apply:gpt-6.1-v1-rc2",
             "4": "reset",
             "q": "quit",
         }
@@ -746,7 +747,7 @@ def main() -> int:
     parser.add_argument(
         "--version",
         choices=tuple(PROMPT_VERSIONS),
-        help="Packaged version for --apply: gpt-5.6-v45, gpt-6-v2-rc1, or gpt-6.1-v1-rc1",
+        help="Packaged version for --apply: gpt-5.6-v45, gpt-6-v2-rc1, or gpt-6.1-v1-rc2",
     )
     parser.add_argument("--name", "-n", help="Destination filename for --file, with or without .md")
     parser.add_argument("--codex-dir", help="Explicit Codex home directory, e.g. ~/.codex")

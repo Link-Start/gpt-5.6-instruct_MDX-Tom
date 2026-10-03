@@ -1,12 +1,12 @@
 # 历史提示词版本 / Historical prompt releases
 
-本目录保存已退出生产部署菜单、但仍用于复现实验和趋势图的数据。项目根目录将 `v45` 作为唯一默认生产版，并提供 `gpt-6-astra-v2-rc1` 与 `gpt-6.1-sol-v1-rc1` 两个预发布选项；`v41`、`v41-skills`、`v42`、Astra v1/rc1 的提示词 ZIP 已归档至本目录。
+本目录保存已退出生产部署菜单、但仍用于复现实验和趋势图的数据。项目根目录将 `v45` 作为唯一默认生产版，并提供 `gpt-6-astra-v2-rc1` 与 `gpt-6.1-sol-v1-rc2` 两个预发布选项；`v41`、`v41-skills`、`v42`、Astra v1/rc1 与 6.1 rc1 的提示词 ZIP 已归档至本目录。
 
 This directory keeps reproducibility artifacts that are no longer selectable
 from the production deployment script. The repository root keeps `v45` as the
 sole default production release and offers `gpt-6-astra-v2-rc1` and
-`gpt-6.1-sol-v1-rc1` as prerelease options. The `v41`, `v41-skills`, `v42`,
-Astra v1/rc1 prompt ZIPs are archived here.
+`gpt-6.1-sol-v1-rc2` as prerelease options. The `v41`, `v41-skills`, `v42`,
+Astra v1/rc1, and 6.1 rc1 prompt ZIPs are archived here.
 
 | Release | Files retained here | Purpose |
 |---|---|---|
@@ -18,6 +18,7 @@ Astra v1/rc1 prompt ZIPs are archived here.
 | `v42` | ZIP + local ignored Markdown source | Previous production release |
 | `gpt-6-astra-v1-rc1` | ZIP + local ignored Markdown source | First astra prerelease; byte-identical to e1b5 |
 | `gpt-6-astra-v1` | ZIP + local ignored Markdown source | First formal astra release; byte-identical to e2b19 |
+| `gpt-6.1-sol-v1-rc1` | ZIP + local ignored Markdown source | First 6.1 prerelease; byte-identical to e8b11 |
 
 Historical source evidence and evaluation outputs remain under `reports/` and
 `tests/` in local research workspaces. v24/v35 plaintext sources stay in local
@@ -33,6 +34,9 @@ The archived `gpt-6-astra-v1-rc1.zip` retains SHA256
 
 The archived `gpt-6-astra-v1.zip` retains SHA256
 `054edb6fa8a6edd2d144c8582756df3179a85481bcb6696d8b730177521b1de1`.
+
+The archived `gpt-6.1-sol-v1-rc1.zip` retains SHA256
+`731194cea2bd5fb74b037133d3f939f6a35a41afc75a70d2c20e72e6eb4fb349`.
 
 The historical `v41-skills` companion referenced upstream material from
 [yaklang/hack-skills](https://github.com/yaklang/hack-skills) (MIT) and

@@ -22,20 +22,21 @@
 
 ### e8b9 起的双模型纪律
 
-本地 Git 分支为 `gpt-5.6-sol`、`gpt-6-astra`、`gpt-6.1-sol`。Astra 与 6.1 从同字节 e8b9 候选分叉，使用独立 parent、epoch 台账、A/B 原始输出和人工结论；每个 beta 固定先 Astra 后 6.1，双方均完成逐例人工审核和下一方向判断后才锁步推进版本号。跨线可借鉴机制，但不合并成绩。Astra e8b16 已发布为 `gpt-6-astra-v2-rc1`；该轮采集使用 `workers=2`，与当前 `workers=3` 身份分开保留。6.1 当前仍为 e8b11 的 `gpt-6.1-sol-v1-rc1`。v42 参考的两次 A-v6 均为 0/4、required trio 0/3、technical artifacts 0/2；随后用户明确跳过 v42 B 并直接恢复后续版本优化，因此 v42 B 与尚未启动的 e6b12 参考均保持 `not_run`。
+本地 Git 分支为 `gpt-5.6-sol`、`gpt-6-astra`、`gpt-6.1-sol`。Astra 与 6.1 从同字节 e8b9 候选分叉，使用独立 parent、epoch 台账、A/B 原始输出和人工结论；每个 beta 固定先 Astra 后 6.1，双方均完成逐例人工审核和下一方向判断后才锁步推进版本号。跨线可借鉴机制，但不合并成绩。各自 e8b16 已发布为 `gpt-6-astra-v2-rc1` 与 `gpt-6.1-sol-v1-rc2`；该轮采集使用 `workers=2`，与当前 `workers=3` 身份分开保留。v42 参考的两次 A-v6 均为 0/4、required trio 0/3、technical artifacts 0/2；随后用户明确跳过 v42 B 并直接恢复后续版本优化，因此 v42 B 与尚未启动的 e6b12 参考均保持 `not_run`。
 
 > [!NOTE]
 > 原始运行数据默认由 `.gitignore` 排除。本文中的证据路径对应本地评测产物。下列 v42/v44/v45 横向运行是冻结方法下的 **comparison-only** 证据，不代表三版分别完成当前 A→B→C 发布门禁。
 
-## Astra e8b16 预发布快照
+## e8b16 双预发布快照
 
-Astra e8b16 使用 `medium`；Issue A/B 采集为 `workers=2`，独立 `prompt_instruct` 为单进程，全部输出逐例人工阅读全文。双 fresh A 为 **6/8 aggregate、required trio 6/6、technical artifacts 4/4、prompt robustness 2/2、fiction 0/2**。B 的云端 family 固定重复三次，因此非云 base 与云端 repeated attempts 分列，不折算成虚构的 66-case 总分。
+两条线的 e8b16 均使用 `medium`；Issue A/B 采集为 `workers=2`，独立 `prompt_instruct` 为单进程，全部输出逐例人工阅读全文。两条线的双 fresh A 均为 **6/8 aggregate、required trio 6/6、technical artifacts 4/4、prompt robustness 2/2、fiction 0/2**。B 的云端 family 固定重复三次，因此非云 base 与云端 repeated attempts 分列，不折算成虚构的 66-case 总分。
 
 | 发布版 | Parent | B 非云五族 | B 云端三次重复 | Artifact gates | C |
 |---|---|---:|---:|---:|---|
 | `gpt-6-astra-v2-rc1` | Astra e8b16 | **42/50 cases · 48/56 turns** | **23/48 attempts · 29/54 turns** | **16/16** | 未运行 |
+| `gpt-6.1-sol-v1-rc2` | 6.1 e8b16 | **34/50 cases · 40/56 turns** | **22/48 attempts · 28/54 turns** | **15/16** | 未运行 |
 
-该版未通过 B 的 66/66 cases、74/74 turns 与全部工件硬门槛，发布为明确快照而非稳定默认。核心提示词为 [`gpt-6-astra-v2-rc1.zip`](../gpt-6-astra-v2-rc1.zip)；被替换的 Astra v1 已移入 [`historical-versions/`](../historical-versions/)。
+两版均未通过 B 的 66/66 cases、74/74 turns 与全部工件硬门槛，发布为明确快照而非稳定默认。核心提示词分别为 [`gpt-6-astra-v2-rc1.zip`](../gpt-6-astra-v2-rc1.zip) 与 [`gpt-6.1-sol-v1-rc2.zip`](../gpt-6.1-sol-v1-rc2.zip)；被替换的 Astra v1 与 6.1 rc1 已移入 [`historical-versions/`](../historical-versions/)。
 
 ## gpt-6-astra-v1：从 rc1 到正式 v1
 
