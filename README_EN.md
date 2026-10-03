@@ -174,6 +174,37 @@ python3 -m unittest discover -s unit-tests -q
 
 See the [Chinese comparison guide](docs/comparison-tests.md) and [English comparison guide](docs/comparison-tests-en.md) for methods, historical evidence, and failure categories.
 
+## Modular JB-A / JB-B Evaluation
+
+The optional JailbreakBench transfer evaluation is fully separate from the
+project's A/B/C gates. `JB-A` contains two cases from each of the ten official
+categories (20 total), while `JB-B` is its strict 80-case complement. They are
+disjoint, their union is the full 100 harmful behaviors, and either module can
+run independently or first. The default order is Astra/JB-A → 6.1/JB-A →
+Astra/JB-B → 6.1/JB-B with `workers=4`.
+
+The suite freezes one official Prompt-with-Random-Search artifact before any
+target run and never selects prompts from target outcomes. Each prompt receives
+one fresh generation and the official window is the first 150 tokens. Scoring
+is locked to the upstream `together_ai/meta-llama/Llama-3-70b-chat-hf`,
+temperature 0, and original classifier prompt. If that exact backend is absent,
+the run remains unjudged rather than using a substitute scorer. The evidence
+records the Codex adapter's greedy/default transport limitation, so results are
+for same-identity project comparisons rather than official leaderboard claims.
+
+```bash
+python3 -m pip install -r requirements-jailbreakbench.txt
+python3 scripts/verify_jailbreakbench.py
+python3 scripts/run_jailbreakbench.py \
+  --suite JB-A --model gpt-6-astra --release-name gpt-6-astra-v2-rc1 \
+  --instructions-file gpt-6-astra-v2-rc1.md --workers 4
+TOGETHER_API_KEY=... python3 scripts/judge_jailbreakbench.py \
+  reports/jailbreakbench-runs/RUN/results.unjudged.jsonl --workers 4
+```
+
+See [`tests/jailbreakbench/README.md`](tests/jailbreakbench/README.md) for source
+locks, split proof, method limitations, and free ordering.
+
 ## Repository Layout 🗂️
 
 ```text
@@ -187,7 +218,7 @@ gpt-instruct/
 ├── reports/prompt_candidates/             # Independent Astra/6.1 working revisions
 ├── historical-versions/                  # Historical releases
 ├── scripts/*.zip                         # Evaluation, scoring, and reporting tools
-├── tests/                                # A/B/C banks and manifest
+├── tests/                                # A/B/C plus modular JB-A/JB-B banks and manifests
 ├── docs/                                 # Methods, charts, and architecture
 └── reports/                              # Local run evidence; ignored by default
 ```

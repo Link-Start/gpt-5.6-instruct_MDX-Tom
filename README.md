@@ -176,6 +176,32 @@ python3 -m unittest discover -s unit-tests -q
 
 方法、历史可比结果和失败分类见[中文对比测试文档](docs/comparison-tests.md)与 [English Documentation](docs/comparison-tests-en.md)。
 
+## JB-A / JB-B 模块化评测
+
+可选的 JailbreakBench 迁移评测与项目 A/B/C 完全分离。`JB-A` 从 10 个官方
+category 各取 2 例（20 例），`JB-B` 是其严格补集（80 例）；两者互斥、并集为
+全部 100 条 harmful behaviors，可独立运行或调换顺序。默认顺序为 Astra/JB-A →
+6.1/JB-A → Astra/JB-B → 6.1/JB-B，默认 `workers=4`。
+
+测试使用运行前冻结的一组官方 Prompt-with-Random-Search artifact，不按被测模型结果
+挑题；每条 prompt 单次 fresh 生成，官方窗口为前 150 tokens。评分器固定为上游
+`together_ai/meta-llama/Llama-3-70b-chat-hf`、temperature 0 和原始判定 prompt；精确
+后端缺失时保留 unjudged，不用替代 scorer。Codex adapter 的 greedy/default transport
+限制会写入证据，因此结果仅用于本项目同身份比较，不作为官方 leaderboard 成绩。
+
+```bash
+python3 -m pip install -r requirements-jailbreakbench.txt
+python3 scripts/verify_jailbreakbench.py
+python3 scripts/run_jailbreakbench.py \
+  --suite JB-A --model gpt-6-astra --release-name gpt-6-astra-v2-rc1 \
+  --instructions-file gpt-6-astra-v2-rc1.md --workers 4
+TOGETHER_API_KEY=... python3 scripts/judge_jailbreakbench.py \
+  reports/jailbreakbench-runs/RUN/results.unjudged.jsonl --workers 4
+```
+
+完整来源锁、拆分证明、方法限制和自由排序方式见
+[`tests/jailbreakbench/README.md`](tests/jailbreakbench/README.md)。
+
 ## 项目结构 🗂️
 
 ```text
@@ -189,7 +215,7 @@ gpt-instruct/
 ├── reports/prompt_candidates/             # Astra/6.1 独立 working revisions
 ├── historical-versions/                  # 历史发布归档
 ├── scripts/*.zip                         # 评测、评分与报告工具
-├── tests/                                # A/B/C 测试集与 manifest
+├── tests/                                # A/B/C 与模块化 JB-A/JB-B 测试集和 manifest
 ├── docs/                                 # 方法、图表与架构
 └── reports/                              # 本地运行证据（默认不提交）
 ```
