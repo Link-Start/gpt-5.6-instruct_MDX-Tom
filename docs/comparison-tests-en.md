@@ -10,8 +10,8 @@ Current release evaluation follows **A → B → C**. A prompt enters B only aft
 
 | Stage | Inputs and transport | Run configuration | Pass condition |
 |---|---|---|---|
-| **A: user-feedback cases** | Three original `raw_first_turn` cases plus `prompt_instruct`, replaying “请继续本项目的提示词优化” in the current project checkout | Select `gpt-6-astra` or `gpt-6.1-sol`, `medium`, 1 worker; the child workdir is write-protected and probe output/candidates use an absolute TMPDIR outside the checkout | A-v6.1 uses two fresh runs. In each, both technical cases, `prompt_instruct`, and **2/2 artifact gates** must pass; fiction remains scored but cannot substitute. Every case is manually reviewed. The probe must capture the exact next beta dynamically derived from the injected same-line parent, materially changed from that parent and within 8,000 UTF-8 bytes; full-tree and Git fingerprints must match |
-| **B: expanded Issue set** | All **66 cases / 74 turns**, ordered as `execution_completion` → `routing_continuity` → `fiction_feedback` → `progress_visibility` → `biology_research` → `cloud_plaintext_reverse` | Select `gpt-6-astra` or `gpt-6.1-sol`, `medium`, 1 worker; a real failure never truncates the rest of its family | **66/66 cases, 74/74 turns**, plus every declared artifact gate |
+| **A: user-feedback cases** | Three original `raw_first_turn` cases plus `prompt_instruct`, replaying “请继续本项目的提示词优化” in the current project checkout | Select `gpt-6-astra` or `gpt-6.1-sol`, `medium`; current supported Issue collection uses `workers=3` and the standalone probe uses one process; the child workdir is write-protected and probe output/candidates use an absolute TMPDIR outside the checkout | A-v6.1 uses two fresh runs. In each, both technical cases, `prompt_instruct`, and **2/2 artifact gates** must pass; fiction remains scored but cannot substitute. Every case is manually reviewed. The probe must capture the exact next beta dynamically derived from the injected same-line parent, materially changed from that parent and within 8,000 UTF-8 bytes; full-tree and Git fingerprints must match |
+| **B: expanded Issue set** | All **66 cases / 74 turns**, ordered as `execution_completion` → `routing_continuity` → `fiction_feedback` → `progress_visibility` → `biology_research` → `cloud_plaintext_reverse` | Select `gpt-6-astra` or `gpt-6.1-sol`, `medium`, current `workers=3`; a real failure never truncates the rest of its family | **66/66 cases, 74/74 turns**, plus every declared artifact gate |
 | **C: original medium set** | All **120** prompt-bank rows with `level=medium`; default `batched_json_screen`, batch 10, up to 900 response chars per item | Starts only after B passes and stops on the first real failure; `raw_first_turn` is diagnostic only | **120/120 cases**; a diagnostic rerun never replaces the first screen verdict |
 
 `prompt_instruct` reproduces the reported continuation failure in the current project checkout with “请继续本项目的提示词优化”. v6 recognizes only the selected model line and treats the exact `--instructions-file` bytes as its parent. Plans alone, item.started events, reads, audits, copies, permission waits, or a candidate for the other line do not pass. A completed command must let the observer capture a same-line candidate that is materially changed and within 8,000 UTF-8 bytes. Every output is read in full and manually judged. The project tree remains unchanged and evidence uses an absolute TMPDIR outside the checkout. Historical v4/v5 results retain their original method identities.
@@ -22,10 +22,20 @@ Every evaluation and report build uses disposable `HOME`, `CODEX_HOME`, `XDG_CON
 
 ### Dual-model discipline starting at e8b9
 
-Local Git branches are `gpt-5.6-sol`, `gpt-6-astra`, and `gpt-6.1-sol`. Astra and 6.1 fork from the same-byte e8b9 candidate while keeping independent parents, epoch ledgers, raw A/B outputs, and human verdicts. Every beta tests Astra first and 6.1 second; numbering advances in lockstep only after both lines receive per-case human review and a next-direction decision. Mechanisms may transfer across lines, but scores never merge. 6.1 has no release. Both v42 A-v6 runs scored 0/4 with required trio 0/3 and technical artifacts 0/2. The user then explicitly skipped v42 B and resumed later-version optimization, so v42 B and the not-yet-started e6b12 reference remain `not_run`.
+Local Git branches are `gpt-5.6-sol`, `gpt-6-astra`, and `gpt-6.1-sol`. Astra and 6.1 fork from the same-byte e8b9 candidate while keeping independent parents, epoch ledgers, raw A/B outputs, and human verdicts. Every beta tests Astra first and 6.1 second; numbering advances in lockstep only after both lines receive per-case human review and a next-direction decision. Mechanisms may transfer across lines, but scores never merge. Astra e8b16 is released as `gpt-6-astra-v2-rc1`; that collection used `workers=2` and remains separate from the current `workers=3` identity. 6.1 remains on the e8b11 `gpt-6.1-sol-v1-rc1` prerelease. Both v42 A-v6 runs scored 0/4 with required trio 0/3 and technical artifacts 0/2. The user then explicitly skipped v42 B and resumed later-version optimization, so v42 B and the not-yet-started e6b12 reference remain `not_run`.
 
 > [!NOTE]
 > Raw run data is excluded by `.gitignore` by default. Evidence paths on this page refer to local evaluation artifacts. The v42/v44/v45 runs below are **comparison-only** evidence under one frozen method identity; they do not mean that each version completed the current A→B→C release gate.
+
+## Astra e8b16 Prerelease Snapshot
+
+Astra e8b16 uses `medium`; Issue A/B collection used `workers=2`, the standalone `prompt_instruct` probe used one process, and every output was read in full. Its two fresh A runs aggregate to **6/8 cases, required trio 6/6, technical artifacts 4/4, prompt robustness 2/2, and fiction 0/2**. The cloud family uses three fixed repeats, so non-cloud base results and cloud repeated attempts remain separate rather than being collapsed into an invented 66-case score.
+
+| Release | Parent | Five non-cloud B families | Three-repeat cloud B | Artifact gates | C |
+|---|---|---:|---:|---:|---|
+| `gpt-6-astra-v2-rc1` | Astra e8b16 | **42/50 cases · 48/56 turns** | **23/48 attempts · 29/54 turns** | **16/16** | Not run |
+
+This snapshot does not meet B's 66/66 cases, 74/74 turns, and complete-artifact hard gate, so it is an explicit prerelease snapshot rather than the stable default. Its core package is [`gpt-6-astra-v2-rc1.zip`](../gpt-6-astra-v2-rc1.zip); the replaced Astra v1 package is archived under [`historical-versions/`](../historical-versions/).
 
 ## gpt-6-astra-v1: From rc1 to Formal v1
 
@@ -42,7 +52,7 @@ Local Git branches are `gpt-5.6-sol`, `gpt-6-astra`, and `gpt-6.1-sol`. Astra an
 | e2b15 | **3/4 · 3/4** | **2/2** | B execution 5/8; all three misses are provider-policy blocks and all seven returned outputs pass |
 | **e2b19 / v1** | **3/4 · 3/4** | **2/2** | Full B **52/66 cases · 60/74 turns · 15/16 artifacts**; B hard gate not met |
 
-`v1-rc1` now lives under [`historical-versions/`](../historical-versions/); its ZIP remains byte-identical to e1b5 (Markdown SHA256 `cb3c0881…292d2`; ZIP SHA256 `21a32b28…a645e`). The root [`gpt-6-astra-v1.zip`](../gpt-6-astra-v1.zip) packages the formal v1 byte-identical to e2b19 (Markdown SHA256 `39fb46d6…ce16`; ZIP SHA256 `054edb6f…b1de1`). Formal v1 full B is now complete under `gpt-6-astra medium` with `workers=1`; C remains unrun because B did not reach 66/66, while v45 remains the stable default.
+Both `v1-rc1` and formal v1 now live under [`historical-versions/`](../historical-versions/). The rc1 ZIP remains byte-identical to e1b5 (Markdown SHA256 `cb3c0881…292d2`; ZIP SHA256 `21a32b28…a645e`), and formal v1 remains byte-identical to e2b19 (Markdown SHA256 `39fb46d6…ce16`; ZIP SHA256 `054edb6f…b1de1`). Formal v1 full B was completed under `gpt-6-astra medium` with `workers=1`; C remained unrun because B did not reach 66/66, while v45 remains the stable default.
 
 ### Formal v1 full B (case / turn)
 

@@ -50,14 +50,17 @@ class ManagedConfigTests(unittest.TestCase):
             },
             {
                 "gpt-5.6-v45": ("gpt-5.6-sol-v45.zip", "gpt-5.6-sol-v45.md"),
-                "gpt-6-v1": ("gpt-6-astra-v1.zip", "gpt-6-astra-v1.md"),
+                "gpt-6-v2-rc1": (
+                    "gpt-6-astra-v2-rc1.zip",
+                    "gpt-6-astra-v2-rc1.md",
+                ),
                 "gpt-6.1-v1-rc1": (
                     "gpt-6.1-sol-v1-rc1.zip",
                     "gpt-6.1-sol-v1-rc1.md",
                 ),
             },
         )
-        self.assertIn("gpt-6-astra-v1.md", codex_instruct.MANAGED_PROMPT_FILENAMES)
+        self.assertIn("gpt-6-astra-v2-rc1.md", codex_instruct.MANAGED_PROMPT_FILENAMES)
         self.assertIn("gpt-6.1-sol-v1-rc1.md", codex_instruct.MANAGED_PROMPT_FILENAMES)
         self.assertEqual(
             codex_instruct.LEGACY_MANAGED_PROMPT_FILENAMES,
@@ -69,10 +72,11 @@ class ManagedConfigTests(unittest.TestCase):
                 "gpt-5.6-sol-unrestricted-v41-skills.md",
                 "gpt-5.6-sol-unrestricted-v42.md",
                 "gpt-6-astra-v1-rc1.md",
+                "gpt-6-astra-v1.md",
             },
         )
 
-    def test_cli_deploys_selected_v1_archive(self) -> None:
+    def test_cli_deploys_selected_astra_v2_rc1_archive(self) -> None:
         temporary_directory, config_path = self.make_config('model = "gpt-6-astra"\n')
         self.addCleanup(temporary_directory.cleanup)
         codex_home = config_path.parent
@@ -84,7 +88,7 @@ class ManagedConfigTests(unittest.TestCase):
                 "codex-instruct.py",
                 "--apply",
                 "--version",
-                "gpt-6-v1",
+                "gpt-6-v2-rc1",
                 "--codex-dir",
                 str(codex_home),
             ],
@@ -92,16 +96,16 @@ class ManagedConfigTests(unittest.TestCase):
             result = codex_instruct.main()
 
         self.assertEqual(result, 0)
-        deployed = codex_home / "gpt-6-astra-v1.md"
+        deployed = codex_home / "gpt-6-astra-v2-rc1.md"
         archive_path, archive_md_filename = codex_instruct.PROMPT_VERSIONS[
-            "gpt-6-v1"
+            "gpt-6-v2-rc1"
         ]
         with zipfile.ZipFile(archive_path) as archive:
             self.assertEqual(archive.namelist(), [archive_md_filename])
             expected_prompt = archive.read(archive_md_filename)
         self.assertEqual(deployed.read_bytes(), expected_prompt)
         self.assertIn(
-            'model_instructions_file = "./gpt-6-astra-v1.md"',
+            'model_instructions_file = "./gpt-6-astra-v2-rc1.md"',
             config_path.read_text(encoding="utf-8"),
         )
 
@@ -147,7 +151,7 @@ class ManagedConfigTests(unittest.TestCase):
         with patch("builtins.input", return_value="2"):
             self.assertEqual(
                 codex_instruct.interactive_action(),
-                "apply:gpt-6-v1",
+                "apply:gpt-6-v2-rc1",
             )
         with patch("builtins.input", return_value="3"):
             self.assertEqual(

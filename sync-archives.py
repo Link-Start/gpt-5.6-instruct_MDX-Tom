@@ -16,8 +16,13 @@ PROMPT_ARCHIVES = (
         "gpt-6.1-sol-v1-rc1.md",
     ),
     (
-        Path("gpt-6-astra-v1.md"),
-        Path("gpt-6-astra-v1.zip"),
+        Path("gpt-6-astra-v2-rc1.md"),
+        Path("gpt-6-astra-v2-rc1.zip"),
+        "gpt-6-astra-v2-rc1.md",
+    ),
+    (
+        Path("historical-versions/gpt-6-astra-v1.md"),
+        Path("historical-versions/gpt-6-astra-v1.zip"),
         "gpt-6-astra-v1.md",
     ),
     (

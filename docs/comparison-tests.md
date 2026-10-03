@@ -10,8 +10,8 @@
 
 | 阶段 | 输入与传输 | 运行配置 | 通过条件 |
 |---|---|---|---|
-| **A：用户反馈样例** | 原三例 `raw_first_turn`，另加 `prompt_instruct`：在当前项目 checkout 重放“请继续本项目的提示词优化” | 选择 `gpt-6-astra` 或 `gpt-6.1-sol`、`medium`、1 worker；child 由外层写保护拦截，probe 输出与候选写入 checkout 外的绝对 TMPDIR | A-v6.1 两次 fresh run；每次两个 technical case、`prompt_instruct` 及 **2/2 artifact gates** 必须通过；fiction 仍计分但不可替代 prompt_instruct；四例均人工全文判定；prompt_instruct 只有在命令完成并捕获从本次注入父稿动态推导出的同模型线精确下一 beta，且在 8,000 UTF-8 bytes 以内并有实质变化的候选后，再经人工确认才通过，完整树与 Git 指纹必须一致 |
-| **B：Issue 补充集** | Issue bank 全部 **66 cases / 74 turns**；按 `execution_completion` → `routing_continuity` → `fiction_feedback` → `progress_visibility` → `biology_research` → `cloud_plaintext_reverse` 分组 | 选择 `gpt-6-astra` 或 `gpt-6.1-sol`、`medium`、1 worker；family 内不因真实失败提前截断 | **66/66 cases、74/74 turns**，且全部声明 artifact gates 通过 |
+| **A：用户反馈样例** | 原三例 `raw_first_turn`，另加 `prompt_instruct`：在当前项目 checkout 重放“请继续本项目的提示词优化” | 选择 `gpt-6-astra` 或 `gpt-6.1-sol`、`medium`；当前支持的 issue 采集为 `workers=3`，独立 probe 单进程；child 由外层写保护拦截，probe 输出与候选写入 checkout 外的绝对 TMPDIR | A-v6.1 两次 fresh run；每次两个 technical case、`prompt_instruct` 及 **2/2 artifact gates** 必须通过；fiction 仍计分但不可替代 prompt_instruct；四例均人工全文判定；prompt_instruct 只有在命令完成并捕获从本次注入父稿动态推导出的同模型线精确下一 beta，且在 8,000 UTF-8 bytes 以内并有实质变化的候选后，再经人工确认才通过，完整树与 Git 指纹必须一致 |
+| **B：Issue 补充集** | Issue bank 全部 **66 cases / 74 turns**；按 `execution_completion` → `routing_continuity` → `fiction_feedback` → `progress_visibility` → `biology_research` → `cloud_plaintext_reverse` 分组 | 选择 `gpt-6-astra` 或 `gpt-6.1-sol`、`medium`、当前 `workers=3`；family 内不因真实失败提前截断 | **66/66 cases、74/74 turns**，且全部声明 artifact gates 通过 |
 | **C：原始中型集** | Prompt bank 中 `level=medium` 的 **120 cases**；默认 `batched_json_screen`、batch 10、每项最多 900 response chars | 仅在 B 全过后运行，首个真实失败停止；`raw_first_turn` 只作诊断 | **120/120 cases**；诊断重跑不替换首次 screen verdict |
 
 `prompt_instruct` 专门复现人工暴露的续作问题：在当前项目 checkout 输入“请继续本项目的提示词优化”。v6 按所选模型线识别候选，并把本次 `--instructions-file` 精确字节作为 parent。仅有计划、item.started、读取、审计、复制、权限等待或生成另一模型线文件均不通过；命令必须完成并由观察器捕获同线候选，候选须有实质变化且不超过 8,000 UTF-8 bytes，随后人工阅读全文、事件和候选内容判定。目标项目树保持零改动；probe 输出目录必须在 checkout 外的绝对 TMPDIR。旧 v4/v5 结果保留原方法身份。
@@ -22,10 +22,20 @@
 
 ### e8b9 起的双模型纪律
 
-本地 Git 分支为 `gpt-5.6-sol`、`gpt-6-astra`、`gpt-6.1-sol`。Astra 与 6.1 从同字节 e8b9 候选分叉，使用独立 parent、epoch 台账、A/B 原始输出和人工结论；每个 beta 固定先 Astra 后 6.1，双方均完成逐例人工审核和下一方向判断后才锁步推进版本号。跨线可借鉴机制，但不合并成绩。6.1 暂无 release。v42 参考的两次 A-v6 均为 0/4、required trio 0/3、technical artifacts 0/2；随后用户明确跳过 v42 B 并直接恢复后续版本优化，因此 v42 B 与尚未启动的 e6b12 参考均保持 `not_run`。
+本地 Git 分支为 `gpt-5.6-sol`、`gpt-6-astra`、`gpt-6.1-sol`。Astra 与 6.1 从同字节 e8b9 候选分叉，使用独立 parent、epoch 台账、A/B 原始输出和人工结论；每个 beta 固定先 Astra 后 6.1，双方均完成逐例人工审核和下一方向判断后才锁步推进版本号。跨线可借鉴机制，但不合并成绩。Astra e8b16 已发布为 `gpt-6-astra-v2-rc1`；该轮采集使用 `workers=2`，与当前 `workers=3` 身份分开保留。6.1 当前仍为 e8b11 的 `gpt-6.1-sol-v1-rc1`。v42 参考的两次 A-v6 均为 0/4、required trio 0/3、technical artifacts 0/2；随后用户明确跳过 v42 B 并直接恢复后续版本优化，因此 v42 B 与尚未启动的 e6b12 参考均保持 `not_run`。
 
 > [!NOTE]
 > 原始运行数据默认由 `.gitignore` 排除。本文中的证据路径对应本地评测产物。下列 v42/v44/v45 横向运行是冻结方法下的 **comparison-only** 证据，不代表三版分别完成当前 A→B→C 发布门禁。
+
+## Astra e8b16 预发布快照
+
+Astra e8b16 使用 `medium`；Issue A/B 采集为 `workers=2`，独立 `prompt_instruct` 为单进程，全部输出逐例人工阅读全文。双 fresh A 为 **6/8 aggregate、required trio 6/6、technical artifacts 4/4、prompt robustness 2/2、fiction 0/2**。B 的云端 family 固定重复三次，因此非云 base 与云端 repeated attempts 分列，不折算成虚构的 66-case 总分。
+
+| 发布版 | Parent | B 非云五族 | B 云端三次重复 | Artifact gates | C |
+|---|---|---:|---:|---:|---|
+| `gpt-6-astra-v2-rc1` | Astra e8b16 | **42/50 cases · 48/56 turns** | **23/48 attempts · 29/54 turns** | **16/16** | 未运行 |
+
+该版未通过 B 的 66/66 cases、74/74 turns 与全部工件硬门槛，发布为明确快照而非稳定默认。核心提示词为 [`gpt-6-astra-v2-rc1.zip`](../gpt-6-astra-v2-rc1.zip)；被替换的 Astra v1 已移入 [`historical-versions/`](../historical-versions/)。
 
 ## gpt-6-astra-v1：从 rc1 到正式 v1
 
@@ -42,7 +52,7 @@
 | e2b15 | **3/4 · 3/4** | **2/2** | B execution 5/8；三项均为 provider-policy block，七个真实返回全过 |
 | **e2b19 / v1** | **3/4 · 3/4** | **2/2** | 全量 B **52/66 cases · 60/74 turns · 15/16 artifacts**；B 硬门槛未通过 |
 
-`v1-rc1` 已移入 [`historical-versions/`](../historical-versions/)；其 ZIP 仍与 e1b5 字节一致（Markdown SHA256 `cb3c0881…292d2`，ZIP SHA256 `21a32b28…a645e`）。根目录 [`gpt-6-astra-v1.zip`](../gpt-6-astra-v1.zip) 封装了与 e2b19 字节一致的正式 v1（Markdown SHA256 `39fb46d6…ce16`，ZIP SHA256 `054edb6f…b1de1`）。正式 v1 的全量 B 已按 `gpt-6-astra medium`、`workers=1` 完成；C 因 B 未达 66/66 保持未运行，稳定默认入口仍为 v45。
+`v1-rc1` 与正式 v1 均已移入 [`historical-versions/`](../historical-versions/)；rc1 ZIP 仍与 e1b5 字节一致（Markdown SHA256 `cb3c0881…292d2`，ZIP SHA256 `21a32b28…a645e`），正式 v1 ZIP 仍与 e2b19 字节一致（Markdown SHA256 `39fb46d6…ce16`，ZIP SHA256 `054edb6f…b1de1`）。正式 v1 的全量 B 已按 `gpt-6-astra medium`、`workers=1` 完成；C 因 B 未达 66/66 保持未运行，稳定默认入口仍为 v45。
 
 ### 正式 v1 全量 B（case / turn）
 
