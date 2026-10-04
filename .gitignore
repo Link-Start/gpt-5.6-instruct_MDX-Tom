@@ -1,6 +1,7 @@
 __pycache__/
 *.pyc
 *.log
+docs/
 reports/
 tests/
 releases/
